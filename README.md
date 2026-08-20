@@ -31,31 +31,21 @@ De BarMap moet voldoen aan de volgende eisen:
 **Begindatum:** 20/08/26
 **Einddatum:** 27/08/26
 
-## Leerdoelen
+## Leerdoelen en werkprocessen
 
 Met dit project wil ik de volgende leerdoelen behalen:
 
-- B1-K1-W1: Stemt opdracht af, plant werkzaamheden en bewaakt voortgang.
-- B1-K1-W2: Maakt een technisch ontwerp voor software, user interface & database design.
-- B1-K1-W3: Realiseert software, object oriented programming
+B1-K1-W1: Stemt opdracht af, plant werkzaamheden en bewaakt voortgang.
+B1-K1-W2: Maakt een technisch ontwerp voor software, user interface & database design.
+B1-K1-W3: Realiseert software, object oriented programming.
 
-## Werkprocessen
-
-Tijdens dit project oefen ik onder andere met:
-
-* het ontwerpen van een applicatie;
-* het realiseren van functionaliteiten;
-* het testen van de applicatie;
-* het oplossen van fouten en problemen;
-* het documenteren van mijn werkzaamheden;
-
-## Kerntaken / Werkprocessen
+Tijdens dit project oefen ik onder andere met het ontwerpen van een applicatie, het realiseren van functionaliteiten, het testen van de applicatie, het oplossen van fouten en problemen en het documenteren van mijn werkzaamheden.
 
 Met deze opdracht hoop ik de volgende kerntaken en werkprocessen te vullen:
 
 * **Ontwerpen:** een ontwerp maken voor de gebruikersinterface, functionaliteiten en technische structuur.
-* **Realiseren:** de applicatie daadwerkelijk ontwikkelen en de geplande functionaliteiten bouwen.
-* **Testen:** controleren of de applicatie correct werkt en gevonden fouten oplossen.
-* **Documenteren:** belangrijke keuzes, functionaliteiten en werkzaamheden vastleggen.
+* **Realiseren**: de applicatie daadwerkelijk ontwikkelen en de geplande functionaliteiten bouwen.
+* **Testen**: controleren of de applicatie correct werkt en gevonden fouten oplossen.
+* **Documenteren**: belangrijke keuzes, functionaliteiten en werkzaamheden vastleggen.
 
 Het uiteindelijke doel is om een werkende en gebruiksvriendelijke horeca applicatie op te leveren die de ouderwetse barmap met streepkaarten gaat verangen.
