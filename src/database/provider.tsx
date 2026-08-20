@@ -1,13 +1,19 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import DataBase from './interface';
-import { ActivityIndicator, StyleSheet, Text } from 'react-native';
+import UserRepository from './repositories/users';
+import ProductRepository from './repositories/products';
+import FactionRepository from './repositories/factions';
+import Loading from '../loading';
+import { error } from "../logging";
 
-type DataBaseCtx = {
-    db: DataBase,
+type DatabaseCtx = {
+    factions: FactionRepository,
+    products: ProductRepository,
+    users: UserRepository,
     admin: boolean,
 }
 
-const DatabaseContext = createContext<DataBaseCtx | null>(null);
+const DatabaseContext = createContext<DatabaseCtx | null>(null);
 
 export function DatabaseProvider({ children }: { children: React.ReactNode }) {
     const [db, setDb] = useState<DataBase | null>(null);
@@ -16,22 +22,22 @@ export function DatabaseProvider({ children }: { children: React.ReactNode }) {
     useEffect(() => {
         DataBase.create()
             .then(setDb)
-            .catch((error) => {
-                console.error('Failed to initialize database:', error);
+            .catch((reason) => {
+                error('Failed to initialize database:', reason);
             });
     }, []);
 
-    if (!db) {
-        const color = "#00bfff";
-        return (<ActivityIndicator 
-            size="large"  
-            color={color} 
-            style={styles.loading} 
-        />);
+    if (!db) return (<Loading message="Loading database..." />);
+
+    const value: DatabaseCtx = {
+        factions: db.factions,
+        products: db.products,
+        users: db.users,
+        admin: admin,
     }
 
     return (
-        <DatabaseContext.Provider value={{ db, admin }}>
+        <DatabaseContext.Provider value={value}>
             {children}
         </DatabaseContext.Provider>
     );
@@ -46,12 +52,3 @@ export function useDatabase() {
 
     return db;
 }
-
-const styles = StyleSheet.create({
-    loading: {
-        flex: 1,
-        backgroundColor: '#fff',
-        alignItems: 'center',
-        justifyContent: 'center',
-    },
-});

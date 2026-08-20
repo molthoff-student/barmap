@@ -1,17 +1,22 @@
 import { StatusBar } from 'expo-status-bar';
 import { StyleSheet, Text, View } from 'react-native';
-import Currency from './src/currency';
 import { DatabaseProvider } from './src/database/provider';
+import Tabbar from './src/global-state/components/tabbar';
+import FactionScreen from './src/test';
+import { GlobalsProvider } from './src/global-state/provider';
+import UserList from './src/global-state/components/userlist';
 
 export default function App() {
-    const test = new Currency({ integer: 1, decimal: 50 });
-    
+    console.log("Rendering App...");
     return (
         <DatabaseProvider>
-            <View style={styles.container}>
-                <Text>{`test: ${test}`}</Text>
-                <StatusBar style="auto" />
-            </View>
+            <GlobalsProvider>
+                <View style={styles.container}>
+                    <Tabbar />
+                    <UserList />
+                    <StatusBar style="auto" />
+                </View>
+            </GlobalsProvider>
         </DatabaseProvider>
     );
 }
@@ -19,8 +24,8 @@ export default function App() {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#fff',
-        alignItems: 'center',
-        justifyContent: 'center',
+        backgroundColor: '#FFFFFF',
+        marginTop: '2%',
+        marginBottom: '2%'
     },
 });
