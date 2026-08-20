@@ -1,7 +1,16 @@
 import * as SQLite from 'expo-sqlite';
+import Currency from '../currency';
 import UserRepository from './repositories/users';
+import ProductRepository from './repositories/products';
+import FactionRepository from './repositories/factions';
 
 const databaseName = "barmap-database";
+
+const INIT_FACTIONS_TBL: string = `
+    CREATE TABLE IF NOT EXISTS factions (
+        faction TEXT PRIMARY KEY
+    );
+`;
 
 const INIT_USER_TBL: string = `
     CREATE TABLE IF NOT EXISTS users (
@@ -11,7 +20,10 @@ const INIT_USER_TBL: string = `
         spent_money INTEGER NOT NULL DEFAULT 0,
         faction TEXT NOT NULL,
         active INTEGER NOT NULL DEFAULT 0
-            CHECK (active IN (0, 1))
+            CHECK (active IN (0, 1)),
+
+        FOREIGN KEY (faction)
+            REFERENCES factions(faction)
     );
 `;
 
@@ -20,8 +32,8 @@ const INIT_PRODUCT_TBL: string = `
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         name TEXT NOT NULL UNIQUE,
         price INTEGER NOT NULL DEFAULT 0,
-        in_stock INTEGER NOT NULL DEFAULT 0
-            CHECK (in_stock IN (0, 1))
+        active INTEGER NOT NULL DEFAULT 0
+            CHECK (active IN (0, 1))
     );
 `;
 
@@ -44,43 +56,119 @@ const INIT_STATISTICS_TBL: string = `
     );
 `;
 
-const TEST_USERS: string = `
-    
-`;
+const DEFAULT_GIVEN: Currency = new Currency({ integer: 100, decimal: 0 });
+const DEFAULT_SPENT: Currency = new Currency({ integer: 50, decimal: 0 });
+const DEFAULT_PRICE: Currency = new Currency({ integer: 1, decimal: 0 });
 
-async function initDatabase(): Promise<SQLite.SQLiteDatabase> {
+const TEST_FACTION_LIST = [
+    "Wilde Vaart",
+    "Leiding",
+    "Zeeverkenner",
+    "Stam",
+    "Gasten",
+    "Clubs"
+]
 
-    if (__DEV__) {
-        await SQLite.deleteDatabaseAsync(databaseName)
-            .catch((reason) => {
-                console.log(reason);
-                // throw new Error(reason);
-            });
-    }
+const TEST_USER_LIST = [
+    { username: "Mick Olthoff", given_money: DEFAULT_GIVEN, spent_money: DEFAULT_SPENT },
+    { username: "Noah Faas", given_money: DEFAULT_GIVEN, spent_money: DEFAULT_SPENT  },
+    { username: "Cas Kluiters", given_money: DEFAULT_GIVEN, spent_money: DEFAULT_SPENT  },
+    { username: "Gerco Hogeveen", given_money: DEFAULT_GIVEN, spent_money: DEFAULT_SPENT  },
+    { username: "Piet Klaas", given_money: DEFAULT_GIVEN, spent_money: DEFAULT_SPENT  },
+    { username: "Joep Van Der Velde", given_money: DEFAULT_GIVEN, spent_money: DEFAULT_SPENT  },
+    { username: "Theo Turbo", given_money: DEFAULT_GIVEN, spent_money: DEFAULT_SPENT  },
+    { username: "Bram", given_money: DEFAULT_GIVEN, spent_money: DEFAULT_SPENT  },
+    { username: "Owen Huijskes", given_money: DEFAULT_GIVEN, spent_money: DEFAULT_SPENT  },
+    { username: "Rutger Pax", given_money: DEFAULT_GIVEN, spent_money: DEFAULT_SPENT  },
+    { username: "Cay Noya", given_money: DEFAULT_GIVEN, spent_money: DEFAULT_SPENT  },
+    { username: "KD", given_money: DEFAULT_GIVEN, spent_money: DEFAULT_SPENT  },
+];
 
-    const db = await SQLite.openDatabaseAsync(databaseName);
+const TEST_PRODUCT_LIST = [
+    { name: "Fris", price: DEFAULT_PRICE, active: true },
+    { name: "Bier", price: DEFAULT_PRICE, active: true },
+    { name: "Chips", price: DEFAULT_PRICE, active: true },
+    { name: "Snacks", price: DEFAULT_PRICE, active: true },
+];
 
-    await db.execAsync(`
-        PRAGMA journal_mode = WAL;
-        ${INIT_USER_TBL}
-        ${INIT_PRODUCT_TBL}
-        ${INIT_STATISTICS_TBL}
-    `);
-
-    if (__DEV__) {
-
-    }
-
-    return db;
-}
-
-export default class DataBase {
+export default class Database {
     readonly users: UserRepository;
+    readonly products: ProductRepository;
+    readonly factions: FactionRepository;
+
     constructor(db: SQLite.SQLiteDatabase) {
         this.users = new UserRepository(db);
+        this.products = new ProductRepository(db);
+        this.factions = new FactionRepository(db);
     }
-    static async create(): Promise<DataBase> {
-        const db = await initDatabase();
-        return new DataBase(db);
+    static async create(): Promise<Database> {
+        if (__DEV__) {
+            await SQLite.deleteDatabaseAsync(databaseName)
+                .catch((reason) => {
+                    console.log(reason);
+                    // throw new Error(reason);
+                });
+        }
+
+        const db = await SQLite.openDatabaseAsync(databaseName);
+
+        await db.execAsync(`
+            PRAGMA journal_mode = WAL;
+            PRAGMA foreign_keys = ON;
+            ${INIT_FACTIONS_TBL}
+            ${INIT_USER_TBL}
+            ${INIT_PRODUCT_TBL}
+            ${INIT_STATISTICS_TBL}
+        `);
+
+        if (__DEV__) {
+            let i = 0;
+            for (const faction of TEST_FACTION_LIST) {
+                await db.runAsync(
+                    `INSERT INTO factions (faction) VALUES (?);`,
+                    faction
+                ).then(result => {
+                    console.log("faction: " + JSON.stringify(result))
+                })
+                .catch(reason => console.log(`TEST_FACTION_LIST: ${reason}`));
+
+                for (const user of TEST_USER_LIST) {
+                    await db.runAsync(
+                        `INSERT INTO users (
+                            username,
+                            given_money,
+                            spent_money,
+                            faction
+                        ) VALUES (?, ?, ?, ?);`,
+                        user.username + i.toString(),
+                        user.given_money.value,
+                        user.spent_money.value,
+                        faction
+                    ).then(result => {
+                        console.log("users: " + JSON.stringify(result))
+                    })
+                    .catch(reason => console.log(`TEST_USER_LIST: ${reason}`));
+                }
+                i += 1;
+            }
+
+            for (const product of TEST_PRODUCT_LIST) {
+                await db.runAsync(
+                    `INSERT INTO products (
+                        name,
+                        price,
+                        active
+                    ) VALUES (?, ?, ?);`,
+                    product.name,
+                    product.price.value,
+                    product.active ? 1 : 0,
+                ).then(result => {
+                    console.log("products: " + JSON.stringify(result))
+                })
+                .catch(reason => console.log(`TEST_PRODUCT_LIST: ${reason}`));
+            }
+        }
+
+        return new Database(db);
     }
 }
