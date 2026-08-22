@@ -3,6 +3,7 @@ import { useDatabase } from "../database/provider";
 import { User } from "../database/repositories/users";
 import Loading from "../loading";
 import { log } from "../logging";
+import { Product } from "../database/repositories/products";
 
 type UseState<T> = React.Dispatch<React.SetStateAction<T>>;
 
@@ -13,6 +14,7 @@ type GlobalsCtx = {
     userList: User[],
     selectedUsers: Set<number>,
     toggleUser: (id: number) => void,
+    productList: Product[],
 }
 
 const GlobalsContext = createContext<GlobalsCtx | null>(null);
@@ -26,6 +28,8 @@ export function GlobalsProvider({ children }: { children: React.ReactNode }) {
 
     const [userList, setUserList] = useState<User[] | null>(null);
     const [selectedUsers, setSelectedUsers] = useState<Set<number>>(new Set());
+
+    const [productList, setProductList] = useState<Product[] | null>(null);
 
     const toggleUser = (id: number) => {
         setSelectedUsers(current => {
@@ -57,15 +61,24 @@ export function GlobalsProvider({ children }: { children: React.ReactNode }) {
                 console.log("updating userList");
                 users.getUsersByFaction(factionList[factionIdx])
                     .then(setUserList)
-                    .catch(reason => console.log(`userList: ${reason}`));
+                    .catch(reason => log(`userList: ${reason}`));
             } else {
                 console.log("factionList wasn't loaded yet...");
             }
         }, 
-        [factionIdx, users]
+        [factionList, factionIdx, users]
     );
 
-    const isLoading = !(factionList && userList);
+    useEffect(
+        () => {
+            products.getActiveProducts()
+                .then(setProductList)
+                .catch(reason => log(`productList: ${reason}`));
+        },
+        []
+    );
+
+    const isLoading = !(factionList && userList && productList);
     if (isLoading) return (<Loading message={`Loading globals...\nfactionList: ${factionList !== null}\nuserList: ${userList !== null}`} />);
     
 
@@ -73,9 +86,13 @@ export function GlobalsProvider({ children }: { children: React.ReactNode }) {
         factionList,
         factionIdx,
         setFactionIdx,
+
         userList,
         selectedUsers,
         toggleUser,
+
+        productList,
+
     }
 
     return (

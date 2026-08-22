@@ -1,20 +1,20 @@
 import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import { DatabaseProvider } from './src/database/provider';
 import Tabbar from './src/global-state/components/tabbar';
-import FactionScreen from './src/test';
 import { GlobalsProvider } from './src/global-state/provider';
 import UserList from './src/global-state/components/userlist';
+import { log } from './src/logging';
 
 export default function App() {
-    console.log("Rendering App...");
+    log("Rendering App...");
     return (
         <DatabaseProvider>
             <GlobalsProvider>
                 <View style={styles.container}>
                     <Tabbar />
                     <UserList />
-                    <StatusBar style="auto" />
+                    {__DEV__ && <StatusBar style="auto" />}
                 </View>
             </GlobalsProvider>
         </DatabaseProvider>

@@ -3,6 +3,7 @@ import Currency from '../currency';
 import UserRepository from './repositories/users';
 import ProductRepository from './repositories/products';
 import FactionRepository from './repositories/factions';
+import { log } from '../logging';
 
 const databaseName = "barmap-database";
 
@@ -105,7 +106,7 @@ export default class Database {
         if (__DEV__) {
             await SQLite.deleteDatabaseAsync(databaseName)
                 .catch((reason) => {
-                    console.log(reason);
+                    log(reason);
                     // throw new Error(reason);
                 });
         }
@@ -128,9 +129,9 @@ export default class Database {
                     `INSERT INTO factions (faction) VALUES (?);`,
                     faction
                 ).then(result => {
-                    console.log("faction: " + JSON.stringify(result))
+                    log("faction: " + JSON.stringify(result))
                 })
-                .catch(reason => console.log(`TEST_FACTION_LIST: ${reason}`));
+                .catch(reason => log(`TEST_FACTION_LIST: ${reason}`));
 
                 for (const user of TEST_USER_LIST) {
                     await db.runAsync(
@@ -145,9 +146,9 @@ export default class Database {
                         user.spent_money.value,
                         faction
                     ).then(result => {
-                        console.log("users: " + JSON.stringify(result))
+                        log("users: " + JSON.stringify(result))
                     })
-                    .catch(reason => console.log(`TEST_USER_LIST: ${reason}`));
+                    .catch(reason => log(`TEST_USER_LIST: ${reason}`));
                 }
                 i += 1;
             }
@@ -163,9 +164,9 @@ export default class Database {
                     product.price.value,
                     product.active ? 1 : 0,
                 ).then(result => {
-                    console.log("products: " + JSON.stringify(result))
+                    log("products: " + JSON.stringify(result))
                 })
-                .catch(reason => console.log(`TEST_PRODUCT_LIST: ${reason}`));
+                .catch(reason => log(`TEST_PRODUCT_LIST: ${reason}`));
             }
         }
 

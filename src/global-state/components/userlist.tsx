@@ -1,28 +1,54 @@
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { useGlobals } from "../provider";
+import { useMemo } from "react";
+import Currency from "../../currency";
+
+type UserTag = {
+    id: number,
+    name: string,
+    balance: Currency
+}
 
 export default function UserList() {
     const { userList, selectedUsers, toggleUser } = useGlobals();
+
+    const users: UserTag[] = useMemo(
+        () => {
+            return userList.map(user => {
+                const balance = new Currency(user.given_money - user.spent_money);
+                return {
+                    id: user.id,
+                    name: user.username,
+                    balance: balance,
+                };
+            });
+        }, 
+        [userList]
+    );
+
     return (
-        <View style={styles.namePanel}>
+        <View style={styles.panel}>
             <ScrollView
                 showsVerticalScrollIndicator={false}
-                contentContainerStyle={styles.nameList}
+                contentContainerStyle={styles.list}
             >
-                {userList.map(user => {
+                {users.map(user => {
                     const selected = selectedUsers.has(user.id);
 
                     return (
                         <Pressable
-                            key={user.username}
+                            key={user.id}
                             onPress={() => toggleUser(user.id)}
                             style={[
-                                styles.nameRow,
-                                selected && styles.selectedNameRow,
+                                styles.row,
+                                selected && styles.selectedRow,
                             ]}
                         >
-                            <Text style={styles.nameText}>
-                                {user.username}
+                            <Text style={styles.text}>
+                                {user.name}
+                            </Text>
+                            <Text>
+                                {user.balance.toString()}
                             </Text>
                         </Pressable>
                     );
@@ -40,33 +66,36 @@ const LOWLIGHT_COLOR = '#d3d3d3';
 
 const styles = StyleSheet.create({
 
-    namePanel: {
+    panel: {
         width: LEFT_PANEL_WIDTH,
         height: "100%",
         borderRightWidth: 3,
         borderRightColor: LINE_COLOR,
     },
 
-    nameList: {
+    list: {
         paddingTop: 10,
         paddingBottom: 20,
     },
 
-    nameRow: {
+    row: {
         height: 43,
         margin: 2,
         borderRadius: 15,
-        justifyContent: 'center',
-        // paddingHorizontal: 4,
         borderWidth: 1,
         borderColor: LINE_COLOR,
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        paddingLeft: '5%',
+        paddingRight: '5%',
     },
 
-    selectedNameRow: {
+    selectedRow: {
         backgroundColor: HIGHLIGHT_COLOR,
     },
 
-    nameText: {
+    text: {
         fontSize: 14,
         color: LINE_COLOR,
         alignSelf: 'center'
