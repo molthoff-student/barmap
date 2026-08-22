@@ -1,6 +1,4 @@
 import { SQLiteDatabase } from "expo-sqlite";
-const TRUE = 1;
-const FALSE = 0;
 
 export type Product = {
     id: number;
