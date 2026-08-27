@@ -1,21 +1,25 @@
-import { useEffect, useState } from 'react';
 import {
   View,
   Text,
   Pressable,
-  FlatList,
   StyleSheet,
   ScrollView,
 } from 'react-native';
 
 import { useGlobals } from '../provider';
+import { exportDatabaseToExcel } from '@/src/administration/excel-export';
+import { useDatabase } from '@/src/database/provider';
 
 export default function Tabbar() {
+    const { database } = useDatabase();
     const { factionList, factionIdx, setFactionIdx } = useGlobals();
 
     return (
         <View style={styles.tabsContainer}>
-            <Pressable style={styles.menuButton}>
+            <Pressable 
+                style={styles.menuButton}
+                onPress={() => exportDatabaseToExcel(database.inner)}
+            >
                 <View style={styles.menuLine} />
                 <View style={styles.menuLine} />
                 <View style={styles.menuLine} />
@@ -93,7 +97,7 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         alignItems: 'center',
         marginRight: 2,
-        borderWidth: 1,
+        borderWidth: 2,
         borderColor: LINE_COLOR,
     },
 
@@ -106,7 +110,7 @@ const styles = StyleSheet.create({
     },
 
     tabText: {
-        fontSize: 14,
+        fontSize: 18,
         color: LINE_COLOR,
     },
 });
