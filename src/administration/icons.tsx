@@ -25,7 +25,7 @@ function initProductIconDir(): Directory {
 
 const PRODUCT_ICON_DIR = initProductIconDir();
 
-export const getPRoductIconDestination = (id: number) => {
+export const getProductIconDestination = (id: number) => {
     return `${PRODUCT_ICON_DIR.uri}${id}.jpg`;
 }
 
@@ -73,6 +73,6 @@ export async function selectUserIcon(id: number): Promise<void> {
 }
 
 export async function selectProductIcon(id: number): Promise<void> {
-    const path = getPRoductIconDestination(id);
+    const path = getProductIconDestination(id);
     await storeImage(path);
 }

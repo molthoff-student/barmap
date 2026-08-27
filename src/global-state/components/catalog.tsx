@@ -1,8 +1,10 @@
-import { FlatList, Pressable, StyleSheet, Text, View } from "react-native";
+import { FlatList, Image, Pressable, StyleSheet, Text, View } from "react-native";
 import { useGlobals } from "../provider";
 import { Product } from "../../database/repositories/products";
 import { useState } from "react";
 import { EditProduct } from "./overlay";
+import { getProductIconDestination } from "@/src/administration/icons";
+import defaultIcon from "./../../../assets/default-user-icon.png";
 
 
 const ADD = "+";
@@ -16,6 +18,31 @@ function Button(props: { product: Product, style: any, onPress: (id: number) => 
         >
             <Text style={styles.buttonText}>{props.text}</Text>
         </Pressable>        
+    );
+}
+
+function ProductIcon({ id }: { id: number }) {
+    const [error, setError] = useState(false);
+    const userIcon = getProductIconDestination(id);
+    const source = error ? defaultIcon : { uri: userIcon };
+
+    if (__DEV__) {
+        const fileName = error ? defaultIcon : userIcon;
+        console.log(`userIcon[${id}]: ${fileName}`);
+    }
+
+    return (
+        <Image
+            source={source}
+            style={styles.image}
+            alt={`icon ${id}`}
+            onError={(event) => {
+                if (__DEV__) {
+                    console.log(`image load error: ${event.nativeEvent.error}`);
+                }
+                setError(true);
+            }}
+        />
     );
 }
 
@@ -49,6 +76,7 @@ export default function Catalog() {
                 onLongPress={() => setEditProduct(item)}
                 delayLongPress={500}
             >
+                <ProductIcon  id={item.id}/>
                 <Text style={styles.name}>{item.name}</Text>
 
                 <View style={styles.controls}>
@@ -93,24 +121,34 @@ export default function Catalog() {
 }
 
 const styles = StyleSheet.create({
-    container: {
-        height: "80%",
-        flex: 1,
-        width: 'auto',
+    image: {
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        width: '100%',
+        height: '100%',
+        resizeMode: 'cover',
     },
 
     card: {
+        position: 'relative',
         width: 200,
         height: 200,
         backgroundColor: '#d9d9d9',
         borderRadius: 34,
         borderColor: '#000000',
         borderWidth: 2,
-        alignItems: 'center',
-        justifyContent: 'space-between',
         paddingTop: 80,
         paddingBottom: 30,
-        margin: 3
+        margin: 3,
+        alignItems: 'center',
+        overflow: 'hidden',
+    },
+
+    container: {
+        height: "80%",
+        flex: 1,
+        width: 'auto',
     },
 
     name: {
@@ -127,6 +165,10 @@ const styles = StyleSheet.create({
         borderColor: '#000000',
         borderRadius: 25,
         overflow: 'hidden',
+        position: 'absolute',
+        // left: 0,
+        // right: 0,
+        // bottom: 0,
     },
 
     button: {
