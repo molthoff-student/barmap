@@ -2,19 +2,23 @@ import { createContext, useContext, useEffect, useState } from "react";
 import { useDatabase } from "../database/provider";
 import { User } from "../database/repositories/users";
 import Loading from "../loading";
-import { log } from "../logging";
 import { Product } from "../database/repositories/products";
 
-type UseState<T> = React.Dispatch<React.SetStateAction<T>>;
+type SetState<T> = React.Dispatch<React.SetStateAction<T>>;
 
 type GlobalsCtx = {
     factionList: string[],
     factionIdx: number,
-    setFactionIdx: UseState<number>
+    setFactionIdx: SetState<number>
     userList: User[],
     selectedUsers: Set<number>,
-    toggleUser: (id: number) => void,
+    toggleUser: (key: number) => void,
     productList: Product[],
+    sellingList: Map<number, number>,
+    sellProduct: (key: number, increase: boolean) => void,
+    updateFactions: () => void,
+    updateUsers: () => void,
+    updateProducts: () => void,
 }
 
 const GlobalsContext = createContext<GlobalsCtx | null>(null);
@@ -30,51 +34,76 @@ export function GlobalsProvider({ children }: { children: React.ReactNode }) {
     const [selectedUsers, setSelectedUsers] = useState<Set<number>>(new Set());
 
     const [productList, setProductList] = useState<Product[] | null>(null);
+    const [sellingList, setSellingList] = useState<Map<number, number>>(new Map());
 
-    const toggleUser = (id: number) => {
+    const toggleUser = (key: number) => {
         setSelectedUsers(current => {
             const next = new Set(current);
 
-            if (next.has(id)) {
-                next.delete(id);
+            if (next.has(key)) {
+                next.delete(key);
             } else {
-                next.add(id);
+                next.add(key);
             }
 
             return next;
         });
     }
 
+    const sellProduct = (key: number, increase: boolean) => {
+        setSellingList(prev => {
+            const next = new Map(prev);
+            const current = next.get(key) ?? 0;
+            const value = current + (increase ? 1 : -1);
+
+            if (value <= 0) {
+                next.delete(key);
+            } else {
+                next.set(key, value);
+            }
+
+            return next;
+        });
+    }
+
+    const updateFactions = () => {
+        if (__DEV__) console.log("updating factionList");
+        factions.getAllFactions()
+            .then(setFactionList)
+            .catch(reason => { if (__DEV__) console.log(`factionList: ${reason}`) });
+    }
+
+    const updateUsers = () => {
+        if (factionList) {
+            if (__DEV__) console.log("updating userList");
+            users.getUsersByFaction(factionList[factionIdx])
+                .then(setUserList)
+                .catch(reason => { if (__DEV__) console.log(`userList: ${reason}`) });
+
+            setSelectedUsers(new Set());
+        } else {
+            if (__DEV__) console.log("factionList wasn't loaded yet...");
+        } 
+    }
+
+    const updateProducts = () => {
+        products.getActiveProducts()
+            .then(setProductList)
+            .catch(reason => { if (__DEV__) console.log(`productList: ${reason}`) });
+    }
+
     useEffect(
-        () => {
-            console.log("updating factionList");
-            factions.getAllFactions()
-                .then(setFactionList)
-                .catch(reason => log(`factionList: ${reason}`));
-        }, 
+        updateFactions, 
         [factions]
     );
 
     useEffect(
-        () => {
-            if (factionList) {
-                console.log("updating userList");
-                users.getUsersByFaction(factionList[factionIdx])
-                    .then(setUserList)
-                    .catch(reason => log(`userList: ${reason}`));
-            } else {
-                console.log("factionList wasn't loaded yet...");
-            }
-        }, 
+        updateUsers, 
         [factionList, factionIdx, users]
     );
 
     useEffect(
-        () => {
-            products.getActiveProducts()
-                .then(setProductList)
-                .catch(reason => log(`productList: ${reason}`));
-        },
+        updateProducts,
         []
     );
 
@@ -92,7 +121,12 @@ export function GlobalsProvider({ children }: { children: React.ReactNode }) {
         toggleUser,
 
         productList,
+        sellingList,
+        sellProduct,
 
+        updateFactions,
+        updateUsers,
+        updateProducts,
     }
 
     return (

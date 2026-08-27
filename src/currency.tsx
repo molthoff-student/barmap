@@ -40,8 +40,8 @@ export default class Currency {
         this.#value = validateValue(value);
     }
 
-    toString(): string {
+    toString(len = 8): string {
         const value = this.#value / 100;
-        return "€" + value.toFixed(2);
+        return "€" + value.toFixed(2).padStart(len);
     }
 }
