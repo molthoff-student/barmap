@@ -4,13 +4,13 @@ import UserRepository from './repositories/users';
 import ProductRepository from './repositories/products';
 import FactionRepository from './repositories/factions';
 import Loading from '../loading';
-import { error } from "../logging";
 
 type DatabaseCtx = {
     factions: FactionRepository,
     products: ProductRepository,
     users: UserRepository,
     admin: boolean,
+    database: DataBase,
 }
 
 const DatabaseContext = createContext<DatabaseCtx | null>(null);
@@ -23,13 +23,14 @@ export function DatabaseProvider({ children }: { children: React.ReactNode }) {
         DataBase.create()
             .then(setDb)
             .catch((reason) => {
-                error('Failed to initialize database:', reason);
+                if (__DEV__) console.error('Failed to initialize database:', reason);
             });
     }, []);
 
     if (!db) return (<Loading message="Loading database..." />);
 
     const value: DatabaseCtx = {
+        database: db,
         factions: db.factions,
         products: db.products,
         users: db.users,

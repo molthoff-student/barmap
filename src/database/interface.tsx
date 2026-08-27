@@ -3,7 +3,6 @@ import Currency from '../currency';
 import UserRepository from './repositories/users';
 import ProductRepository from './repositories/products';
 import FactionRepository from './repositories/factions';
-import { log } from '../logging';
 
 const databaseName = "barmap-database";
 
@@ -57,7 +56,7 @@ const INIT_STATISTICS_TBL: string = `
     );
 `;
 
-const DEFAULT_GIVEN: Currency = new Currency({ integer: 100, decimal: 0 });
+const DEFAULT_GIVEN: Currency = new Currency({ integer: 10000, decimal: 0 });
 const DEFAULT_SPENT: Currency = new Currency({ integer: 50, decimal: 0 });
 const DEFAULT_PRICE: Currency = new Currency({ integer: 1, decimal: 0 });
 
@@ -82,7 +81,7 @@ const TEST_USER_LIST = [
     { username: "Owen Huijskes", given_money: DEFAULT_GIVEN, spent_money: DEFAULT_SPENT  },
     { username: "Rutger Pax", given_money: DEFAULT_GIVEN, spent_money: DEFAULT_SPENT  },
     { username: "Cay Noya", given_money: DEFAULT_GIVEN, spent_money: DEFAULT_SPENT  },
-    { username: "KD", given_money: DEFAULT_GIVEN, spent_money: DEFAULT_SPENT  },
+    { username: "16characters1234", given_money: DEFAULT_GIVEN, spent_money: DEFAULT_SPENT  },
 ];
 
 const TEST_PRODUCT_LIST = [
@@ -93,20 +92,27 @@ const TEST_PRODUCT_LIST = [
 ];
 
 export default class Database {
+    readonly inner: SQLite.SQLiteDatabase;
     readonly users: UserRepository;
     readonly products: ProductRepository;
     readonly factions: FactionRepository;
 
-    constructor(db: SQLite.SQLiteDatabase) {
-        this.users = new UserRepository(db);
-        this.products = new ProductRepository(db);
-        this.factions = new FactionRepository(db);
+    constructor(
+        db: SQLite.SQLiteDatabase,
+        users: UserRepository,
+        products: ProductRepository,
+        factions: FactionRepository,
+    ) {
+        this.inner = db;
+        this.users = users;
+        this.products = products;
+        this.factions = factions;
     }
     static async create(): Promise<Database> {
-        if (__DEV__) {
+        if (false) {
             await SQLite.deleteDatabaseAsync(databaseName)
                 .catch((reason) => {
-                    log(reason);
+                    if (__DEV__) console.log(reason);
                     // throw new Error(reason);
                 });
         }
@@ -122,16 +128,16 @@ export default class Database {
             ${INIT_STATISTICS_TBL}
         `);
 
-        if (__DEV__) {
+        if (false) {
             let i = 0;
             for (const faction of TEST_FACTION_LIST) {
                 await db.runAsync(
                     `INSERT INTO factions (faction) VALUES (?);`,
                     faction
                 ).then(result => {
-                    log("faction: " + JSON.stringify(result))
+                    if (__DEV__) console.log("faction: " + JSON.stringify(result))
                 })
-                .catch(reason => log(`TEST_FACTION_LIST: ${reason}`));
+                .catch(reason => {if (__DEV__) console.log(`TEST_FACTION_LIST: ${reason}`)});
 
                 for (const user of TEST_USER_LIST) {
                     await db.runAsync(
@@ -146,9 +152,9 @@ export default class Database {
                         user.spent_money.value,
                         faction
                     ).then(result => {
-                        log("users: " + JSON.stringify(result))
+                        if (__DEV__) console.log("users: " + JSON.stringify(result))
                     })
-                    .catch(reason => log(`TEST_USER_LIST: ${reason}`));
+                    .catch(reason => {if (__DEV__) console.log(`TEST_USER_LIST: ${reason}`)});
                 }
                 i += 1;
             }
@@ -164,12 +170,21 @@ export default class Database {
                     product.price.value,
                     product.active ? 1 : 0,
                 ).then(result => {
-                    log("products: " + JSON.stringify(result))
+                    if (__DEV__) console.log("products: " + JSON.stringify(result))
                 })
-                .catch(reason => log(`TEST_PRODUCT_LIST: ${reason}`));
+                .catch(reason => {if (__DEV__) console.log(`TEST_PRODUCT_LIST: ${reason}`)});
             }
         }
 
-        return new Database(db);
+        const users = await UserRepository.create(db);
+        const products = await ProductRepository.create(db);
+        const factions = await FactionRepository.create(db);
+        
+        return new Database(
+            db,
+            users,
+            products,
+            factions,
+        );
     }
 }
