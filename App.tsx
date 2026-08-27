@@ -4,16 +4,19 @@ import { DatabaseProvider } from './src/database/provider';
 import Tabbar from './src/global-state/components/tabbar';
 import { GlobalsProvider } from './src/global-state/provider';
 import UserList from './src/global-state/components/userlist';
-import { log } from './src/logging';
+import Catalog from './src/global-state/components/catalog';
 
 export default function App() {
-    log("Rendering App...");
+    if (__DEV__) console.log("Rendering App....");
     return (
         <DatabaseProvider>
             <GlobalsProvider>
                 <View style={styles.container}>
                     <Tabbar />
-                    <UserList />
+                    <View style={styles.mainContent}>
+                        <UserList />
+                        <Catalog />
+                    </View>
                     {__DEV__ && <StatusBar style="auto" />}
                 </View>
             </GlobalsProvider>
@@ -28,4 +31,8 @@ const styles = StyleSheet.create({
         marginTop: '2%',
         marginBottom: '2%'
     },
+
+    mainContent: {
+        flexDirection: 'row',
+    }
 });
