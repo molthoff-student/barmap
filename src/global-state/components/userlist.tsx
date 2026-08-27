@@ -31,7 +31,6 @@ function UserIcon({ id }: { id: number }) {
     );
 }
 
-
 export default function UserList() {
     const { userList, selectedUsers, toggleUser } = useGlobals();
     const [editUser, setEditUser] = useState<User | null>(null);
