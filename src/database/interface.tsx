@@ -1,60 +1,12 @@
 import * as SQLite from 'expo-sqlite';
 import Currency from '../currency';
-import UserRepository from './repositories/users';
-import ProductRepository from './repositories/products';
+import UserRepository, { User } from './repositories/users';
+import ProductRepository, { Product } from './repositories/products';
 import FactionRepository from './repositories/factions';
+import TransactionRepository from './repositories/transactions';
 
+const INSERT_TEST_DATA = true;
 const databaseName = "barmap-database";
-
-const INIT_FACTIONS_TBL: string = `
-    CREATE TABLE IF NOT EXISTS factions (
-        faction TEXT PRIMARY KEY
-    );
-`;
-
-const INIT_USER_TBL: string = `
-    CREATE TABLE IF NOT EXISTS users (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        username TEXT NOT NULL UNIQUE,
-        given_money INTEGER NOT NULL DEFAULT 0,
-        spent_money INTEGER NOT NULL DEFAULT 0,
-        faction TEXT NOT NULL,
-        active INTEGER NOT NULL DEFAULT 0
-            CHECK (active IN (0, 1)),
-
-        FOREIGN KEY (faction)
-            REFERENCES factions(faction)
-    );
-`;
-
-const INIT_PRODUCT_TBL: string = `
-    CREATE TABLE IF NOT EXISTS products (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        name TEXT NOT NULL UNIQUE,
-        price INTEGER NOT NULL DEFAULT 0,
-        active INTEGER NOT NULL DEFAULT 0
-            CHECK (active IN (0, 1))
-    );
-`;
-
-const INIT_STATISTICS_TBL: string = `
-    CREATE TABLE IF NOT EXISTS statistics (
-        user_id INTEGER NOT NULL,
-        product_id INTEGER NOT NULL,
-        amount_bought INTEGER NOT NULL DEFAULT 0
-            CHECK (amount_bought >= 0),
-
-        PRIMARY KEY (user_id, product_id),
-
-        FOREIGN KEY (user_id)
-            REFERENCES users(id)
-            ON DELETE CASCADE,
-
-        FOREIGN KEY (product_id)
-            REFERENCES products(id)
-            ON DELETE CASCADE
-    );
-`;
 
 const DEFAULT_GIVEN: Currency = new Currency({ integer: 10000, decimal: 0 });
 const DEFAULT_SPENT: Currency = new Currency({ integer: 50, decimal: 0 });
@@ -91,25 +43,28 @@ const TEST_PRODUCT_LIST = [
     { name: "Snacks", price: DEFAULT_PRICE, active: true },
 ];
 
+
 export default class Database {
     readonly inner: SQLite.SQLiteDatabase;
     readonly users: UserRepository;
     readonly products: ProductRepository;
     readonly factions: FactionRepository;
-
+    readonly transactions: TransactionRepository;
     constructor(
         db: SQLite.SQLiteDatabase,
         users: UserRepository,
         products: ProductRepository,
         factions: FactionRepository,
+        transactions: TransactionRepository
     ) {
         this.inner = db;
         this.users = users;
         this.products = products;
         this.factions = factions;
+        this.transactions = transactions;
     }
     static async create(): Promise<Database> {
-        if (false) {
+        if (__DEV__ && INSERT_TEST_DATA) {
             await SQLite.deleteDatabaseAsync(databaseName)
                 .catch((reason) => {
                     if (__DEV__) console.log(reason);
@@ -119,72 +74,75 @@ export default class Database {
 
         const db = await SQLite.openDatabaseAsync(databaseName);
 
+        if (__DEV__) console.log("opened database...");
         await db.execAsync(`
             PRAGMA journal_mode = WAL;
             PRAGMA foreign_keys = ON;
-            ${INIT_FACTIONS_TBL}
-            ${INIT_USER_TBL}
-            ${INIT_PRODUCT_TBL}
-            ${INIT_STATISTICS_TBL}
         `);
+        if (__DEV__) console.log("initialized PRAGMA's...");
+        const factions = await FactionRepository.create(db);
+        if (__DEV__) console.log("created FactionRepository...");
+        const users = await UserRepository.create(db);
+        if (__DEV__) console.log("created UserRepository...");
+        const products = await ProductRepository.create(db);
+        if (__DEV__) console.log("created ProductRepository...");
+        const transactions = await TransactionRepository.create(db);
+        if (__DEV__) console.log("created TransactionRepository...");
 
-        if (false) {
+        if (__DEV__&& INSERT_TEST_DATA) {
             let i = 0;
             for (const faction of TEST_FACTION_LIST) {
-                await db.runAsync(
-                    `INSERT INTO factions (faction) VALUES (?);`,
-                    faction
-                ).then(result => {
-                    if (__DEV__) console.log("faction: " + JSON.stringify(result))
-                })
-                .catch(reason => {if (__DEV__) console.log(`TEST_FACTION_LIST: ${reason}`)});
+                try {
+                    await factions.addFaction(faction);
+                } catch (reason) {
+                    const message = `Database: ${reason}`;
+                    if (__DEV__) console.error(message);
+                    throw new Error(message);
+                }
 
                 for (const user of TEST_USER_LIST) {
-                    await db.runAsync(
-                        `INSERT INTO users (
-                            username,
-                            given_money,
-                            spent_money,
-                            faction
-                        ) VALUES (?, ?, ?, ?);`,
-                        user.username + i.toString(),
-                        user.given_money.value,
-                        user.spent_money.value,
-                        faction
-                    ).then(result => {
-                        if (__DEV__) console.log("users: " + JSON.stringify(result))
-                    })
-                    .catch(reason => {if (__DEV__) console.log(`TEST_USER_LIST: ${reason}`)});
+                    try {
+                        const data: User = {
+                            id: 0,
+                            username: user.username + i.toString(),
+                            given_money: user.given_money,
+                            spent_money: user.spent_money,
+                            balance: user.given_money.sub(user.spent_money),
+                            faction,
+                        }
+                        await users.addUser(data);
+                    } catch (reason) {
+                        const message = `Database: ${reason}`;
+                        if (__DEV__) console.error(message);
+                        throw new Error(message);
+                    }
                 }
                 i += 1;
             }
 
             for (const product of TEST_PRODUCT_LIST) {
-                await db.runAsync(
-                    `INSERT INTO products (
-                        name,
-                        price,
-                        active
-                    ) VALUES (?, ?, ?);`,
-                    product.name,
-                    product.price.value,
-                    product.active ? 1 : 0,
-                ).then(result => {
-                    if (__DEV__) console.log("products: " + JSON.stringify(result))
-                })
-                .catch(reason => {if (__DEV__) console.log(`TEST_PRODUCT_LIST: ${reason}`)});
+                try {
+                    const data: Product = {
+                        id: 0,
+                        price: product.price.value,
+                        active: product.active,
+                        name: product.name,
+                    }
+                    await products.addProduct(data);
+                } catch (reason) {
+                    const message = `Database: ${reason}`;
+                    if (__DEV__) console.error(message);
+                    throw new Error(message);
+                }
             }
         }
-
-        const users = await UserRepository.create(db);
-        const products = await ProductRepository.create(db);
-        const factions = await FactionRepository.create(db);
         
         return new Database(
             db,
             users,
             products,
             factions,
+            transactions,
         );
     }
 }
