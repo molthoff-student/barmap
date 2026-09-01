@@ -3,11 +3,11 @@ import { selectUserIcon, selectProductIcon } from "@/src/administration/icons";
 import Currency from "@/src/currency";
 import { useDatabase } from "@/src/database/provider";
 import { User } from "@/src/database/repositories/users";
-import { ACCENT_COLOR, DEFAULT_BORDER_WIDTH, DEFAULT_COLOR, LOWLIGHT_COLOR } from "@/src/static";
 import { ReactNode, useState } from "react";
-import { Button, Modal, StyleSheet, Text, TextInput, View } from "react-native";
-import { useGlobals } from "../provider";
+import { Alert, Button, Modal, StyleSheet, Text, TextInput, View } from "react-native";
+import { useProducts, useUsers } from "../provider";
 import { Product } from "@/src/database/repositories/products";
+import statics from "@/src/static";
 
 export type UserTag = {
     id: number,
@@ -65,7 +65,7 @@ export function EditUser({ user, exit }: {
     exit: () => void,
 }) {
     const { users } = useDatabase();
-    const { updateUsers } = useGlobals();
+    const { updateUsers } = useUsers();
     const [username, setUsername] = useState(user.username);
     const [deposit, setDeposit] = useState(new Currency(0));
 
@@ -75,16 +75,31 @@ export function EditUser({ user, exit }: {
         setDeposit(deposit);
     }
 
+    const editUserName = async (text: string) => {
+        const name = text.trim().slice(0, 16);
+        setUsername(name);
+    }
+
     const saveUserEdit = async () => {
+        const given_money = user.given_money.add(deposit);
+        const balance = given_money.sub(user.spent_money);
         const newUser: User = {
             id: user.id,
-            given_money: user.given_money + deposit.value,
+            given_money,
             spent_money: user.spent_money,
-            username: username,
+            balance: balance,
+            username: username.trim().slice(0, 16),
             faction: user.faction,
         }
 
-        await users.editUser(newUser);
+        try {
+            await users.editUser(newUser);
+        } catch (reason) {
+            Alert.alert(
+                "Gebruiker kon niet worden gewijzigd", 
+                `${reason}`
+            );
+        }
 
         updateUsers();
 
@@ -99,7 +114,7 @@ export function EditUser({ user, exit }: {
                     <TextInput
                         style={styles.input}
                         value={username}
-                        onChangeText={setUsername}
+                        onChangeText={editUserName}
                         placeholder="Nieuwe gebruikersnaam"
                     />
                 </View>
@@ -125,7 +140,7 @@ export function EditProduct({ product, exit }: {
     exit: () => void,
 }) {
     const { products } = useDatabase();
-    const { updateProducts } = useGlobals();
+    const { updateProducts } = useProducts();
 
     const [name, setName] = useState(product.name)
     const [price, setPrice] = useState(new Currency(product.price));
@@ -144,7 +159,15 @@ export function EditProduct({ product, exit }: {
             active: product.active,
         }
 
-        await products.editProduct(newProduct);
+        try {
+            await products.editProduct(newProduct);
+        } catch(reason) {
+            Alert.alert(
+                "Product kon niet worden gewijzigd",
+                `${reason}`
+            );
+        }
+        
 
             
         updateProducts();
@@ -170,7 +193,7 @@ export function EditProduct({ product, exit }: {
                         style={styles.input}
                         value={price.toString()}
                         onChangeText={checkPrice}
-                        placeholder="€    0.00"
+                        placeholder={new Currency(0).toString()}
                     />
                 </View>
                 <Button title="Verander afbeelding" onPress={() => selectProductIcon(product.id)} />
@@ -181,6 +204,8 @@ export function EditProduct({ product, exit }: {
     );
 }
 
+const { color, border } = statics;
+const { width } = border;
 const styles = StyleSheet.create({
     overlay: {
         flex: 1,
@@ -193,7 +218,7 @@ const styles = StyleSheet.create({
         width: "80%",
         padding: 20,
         borderRadius: 12,
-        backgroundColor: DEFAULT_COLOR,
+        backgroundColor: color.default,
     },
 
     title: {
@@ -211,30 +236,30 @@ const styles = StyleSheet.create({
         width: 230,
         fontSize: 18,
         fontWeight: 'bold',
-        color: ACCENT_COLOR,
+        color: color.accent,
     },
 
     input: {
         flex: 1,
         height: 45,
-        borderWidth: DEFAULT_BORDER_WIDTH,
-        borderColor: LOWLIGHT_COLOR,
+        borderWidth: width.default,
+        borderColor: color.lowlight,
         borderRadius: 8,
         paddingHorizontal: 10,
         marginBottom: 15,
         fontSize: 18,
-        color: ACCENT_COLOR,
+        color: color.accent,
     },
 
     passwordInput: {
         width: "100%",
         height: 45,
-        borderWidth: DEFAULT_BORDER_WIDTH,
-        borderColor: LOWLIGHT_COLOR,
+        borderWidth: width.default,
+        borderColor: color.lowlight,
         borderRadius: 8,
         paddingHorizontal: 10,
         marginBottom: 15,
         fontSize: 18,
-        color: ACCENT_COLOR,
+        color: color.accent,
     },
 });

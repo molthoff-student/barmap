@@ -6,13 +6,14 @@ import {
   ScrollView,
 } from 'react-native';
 
-import { useGlobals } from '../provider';
+import { useFactions } from '../provider';
 import { exportDatabaseToExcel } from '@/src/administration/excel-export';
 import { useDatabase } from '@/src/database/provider';
+import statics from '@/src/static';
 
 export default function Tabbar() {
     const { database } = useDatabase();
-    const { factionList, factionIdx, setFactionIdx } = useGlobals();
+    const { factionList, factionIdx, setFactionIdx } = useFactions();
 
     return (
         <View style={styles.tabsContainer}>
@@ -53,18 +54,16 @@ export default function Tabbar() {
 }
 
 const TAB_HEIGHT = 40;
-const LINE_COLOR = '#000000';
-const BACKGROUND_COLOR = '#FFFFFF';
-const HIGHLIGHT_COLOR = '#91C5F2';
-const LOWLIGHT_COLOR = '#d3d3d3';
+const { color, border } = statics;
+const { width } = border;
 
 const styles = StyleSheet.create({
     tabsContainer: {
         height: TAB_HEIGHT,
         flexDirection: 'row',
         borderBottomWidth: 3,
-        borderBottomColor: LINE_COLOR,
-        backgroundColor: BACKGROUND_COLOR,
+        borderBottomColor: color.accent,
+        backgroundColor: color.default,
     },
 
     menuButton: {
@@ -72,14 +71,14 @@ const styles = StyleSheet.create({
         height: TAB_HEIGHT,
         justifyContent: 'center',
         alignItems: 'center',
-        borderWidth: 3,
-            borderColor: LINE_COLOR,
+        borderWidth: width.section,
+        borderColor: color.accent,
     },
 
     menuLine: {
         width: 27,
         height: 3,
-        backgroundColor: LINE_COLOR,
+        backgroundColor: color.accent,
         marginVertical: 2,
     },
 
@@ -91,14 +90,14 @@ const styles = StyleSheet.create({
     tab: {
         width: 170,
         height: TAB_HEIGHT,
-        backgroundColor: LOWLIGHT_COLOR,
+        backgroundColor: color.lowlight,
         borderTopLeftRadius: 20,
         borderTopRightRadius: 20,
         justifyContent: 'center',
         alignItems: 'center',
         marginRight: 2,
-        borderWidth: 2,
-        borderColor: LINE_COLOR,
+        borderWidth: width.default,
+        borderColor: color.accent,
     },
 
     firstTab: {
@@ -106,11 +105,11 @@ const styles = StyleSheet.create({
     },
 
     selectedTab: {
-        backgroundColor: HIGHLIGHT_COLOR,
+        backgroundColor: color.highlight,
     },
 
     tabText: {
         fontSize: 18,
-        color: LINE_COLOR,
+        color: color.accent,
     },
 });

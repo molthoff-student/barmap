@@ -3,6 +3,16 @@ import { compileSQL } from "../compile";
 
 const REPO: string = "products";
 
+const INIT_PRODUCT_TBL: string = `
+    CREATE TABLE IF NOT EXISTS ${REPO} (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL UNIQUE,
+        price INTEGER NOT NULL DEFAULT 0,
+        active INTEGER NOT NULL DEFAULT 0
+            CHECK (active IN (0, 1))
+    );
+`;
+
 const GET_PRODUCT_BY_NAME: string = `
     SELECT * FROM ${REPO}
     WHERE name = ?
@@ -23,10 +33,24 @@ const EDIT_PRODUCT: string = `
     WHERE id = ?;
 `;
 
-type ProductRepositoryQueries = {
+const ADD_PRODUCT: string = `
+    INSERT INTO ${REPO} (
+        price,
+        active,
+        name
+    ) VALUES (
+        ?,
+        ?,
+        ?
+    );
+`;
+
+type Queries = {
+    init: SQLiteStatement,
     productByName: SQLiteStatement,
     productByActivity: SQLiteStatement,
     editProduct: SQLiteStatement,
+    addProduct: SQLiteStatement,
 }
 
 export type Product = {
@@ -37,26 +61,36 @@ export type Product = {
 }
 
 export default class ProductRepository {
-    private readonly db: SQLiteDatabase;
-    private readonly queries: ProductRepositoryQueries;
-    constructor(db: SQLiteDatabase, queries: ProductRepositoryQueries) {
-        this.db = db;
+    private readonly queries: Queries;
+    constructor(queries: Queries) {
         this.queries = queries;
     }
     static async create(db: SQLiteDatabase): Promise<ProductRepository> {
-        const [productByName, productByActivity, editProduct] = await Promise.all([
+        try {
+            await db.execAsync(INIT_PRODUCT_TBL);
+        } catch (reason) {
+            const message = `${REPO}: ${reason}`;
+            if (__DEV__) console.error(message);
+            throw new Error(message);
+        }
+
+        const [init, productByName, productByActivity, editProduct, addProduct] = await Promise.all([
+            compileSQL(db, INIT_PRODUCT_TBL),
             compileSQL(db, GET_PRODUCT_BY_NAME),
             compileSQL(db, GET_PRODUCT_BY_ACTIVITY),
             compileSQL(db, EDIT_PRODUCT),
+            compileSQL(db, ADD_PRODUCT),
         ]);
 
-        const queries: ProductRepositoryQueries = {
+        const queries: Queries = {
+            init,
             productByName,
             productByActivity,
             editProduct,
+            addProduct,
         }
 
-        return new ProductRepository(db, queries);
+        return new ProductRepository(queries);
     }
     async getProductByName(name: string): Promise<Product | null> {
         const product = await this.queries.productByName.executeAsync<Product>(name)
@@ -97,6 +131,21 @@ export default class ProductRepository {
                 product.active,
                 product.name,
                 product.id,
+            );
+
+            if (__DEV__) console.log(`${REPO} changes: ${result.changes}`);
+            if (result.changes === 0) throw new Error(`editProduct: ${product.id} was not updated`);
+        
+        } catch (reason) {
+            throw new Error(`editProduct: ${reason}`);
+        }
+    }
+    async addProduct(product: Product): Promise<void> {
+        try {
+            const result = await this.queries.addProduct.executeAsync(
+                product.price,
+                product.active,
+                product.name,
             );
 
             if (__DEV__) console.log(`${REPO} changes: ${result.changes}`);
