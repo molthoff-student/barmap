@@ -1,8 +1,7 @@
-import { FlatList, Image, Pressable, StyleSheet, Text, View } from "react-native";
+import { FlatList, Pressable, StyleSheet, Text, View } from "react-native";
 import { useUsers } from "../provider";
 import React, { useCallback, useMemo, useState } from "react";
-import { getUserIconDestination } from "../../administration/icons";
-import defaultIcon from "./../../../assets/default-user-icon.png";
+import { UserIcon } from "../../administration/icons";
 import { EditUser } from "./overlay";
 import statics from "@/src/static";
 import { User } from "@/src/database/repositories/users";
@@ -10,38 +9,6 @@ import { User } from "@/src/database/repositories/users";
 const COLUMNS = 4;
 const GAP = 1.5;
 const CARD_WIDTH = 100 / COLUMNS - GAP;
-
-const DefaultIcon = React.memo(function DefaultIcon() {
-    return (
-        <Image
-            source={defaultIcon}
-            style={styles.image}
-            alt={`default user icon`}
-        />
-    );
-});
-
-const UserIcon = React.memo(function UserIcon({ id }: { id: number }) {
-    const [loaded, setLoaded] = useState(false);
-    const userIcon = { uri: getUserIconDestination(id) };
-
-    if (__DEV__ && loaded) console.log(`UserIcon[${id}] loaded succesfully`);
-
-    return (
-        <>
-            {loaded
-                ? <Image
-                    source={userIcon}
-                    style={styles.image}
-                    alt={`icon ${id}`}
-                    onLoad={() => setLoaded(true)}
-                    onError={() => setLoaded(false)}
-                />
-                : <DefaultIcon />
-            }
-        </>
-    );
-});
 
 const UserCard = React.memo(function UserCard({ item, selected, len, toggleUser, setEditUser }: { 
     item: User,

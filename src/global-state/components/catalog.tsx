@@ -1,10 +1,9 @@
-import { FlatList, Image, ImageBackground, Pressable, StyleSheet, Text, View } from "react-native";
+import { FlatList, Pressable, StyleSheet, Text, View } from "react-native";
 import { useProducts } from "../provider";
 import { Product } from "../../database/repositories/products";
-import React, { useCallback, useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { EditProduct } from "./overlay";
-import { getProductIconDestination } from "@/src/administration/icons";
-import defaultIcon from "./../../../assets/default-user-icon.png";
+import { ProductIcon } from "@/src/administration/icons";
 import Currency from "../../currency";
 import statics from "@/src/static";
 
@@ -13,38 +12,6 @@ const SUB = "-";
 const COLUMNS = 2;
 const GAP = 3;
 const CARD_WIDTH = 100 / COLUMNS - GAP;
-
-const DefaultIcon = React.memo(function DefaultIcon() {
-    return (
-        <Image
-            source={defaultIcon}
-            style={styles.image}
-            alt={`default product icon`}
-        />
-    );
-});
-
-const ProductIcon = React.memo(function ProductIcon({ id }: { id: number }) {
-    const [loaded, setLoaded] = useState(false);
-    const userIcon = { uri: getProductIconDestination(id) };
-
-    if (__DEV__ && loaded) console.log(`ProductIcon[${id}] loaded succesfully`);
-    
-    return (
-        <>
-            {loaded 
-                ? <Image
-                    source={userIcon}
-                    style={styles.image}
-                    alt={`icon ${id}`}
-                    onLoad={() => setLoaded(true)}
-                    onError={() => setLoaded(false)}
-                />
-                : <DefaultIcon />
-            }
-        </>
-    );
-});
 
 function ControlsRow({ button, description, price, onPress, onHeld, style }: {
     button: string,
@@ -55,25 +22,40 @@ function ControlsRow({ button, description, price, onPress, onHeld, style }: {
     style: typeof styles.sub | typeof styles.add,
 }) {
     const interval = useRef<ReturnType<typeof setInterval> | null>(null);
-    const onPressIn = () => {
-        interval.current = setInterval(() => {
-            onHeld();
-        }, 500);
-    };
+    const wasHeld = useRef(false);
 
-    const onPressOut = () => {
+    const clear = () => {
         if (interval.current) {
             clearInterval(interval.current);
             interval.current = null;
         }
     };
+
+    const onPressIn = () => {
+        clear();
+        wasHeld.current = false;
+        interval.current = setInterval(() => {
+            wasHeld.current = true;
+            onHeld();
+        }, 500);
+    };
+
+    const onPressOut = () => {
+        clear();
+    };
+
+    const handlePress = () => {
+        if (!wasHeld.current) onPress();
+    };
+
+    // Guarantee interval is killed upon a re-render.
+    useEffect(() => clear, []);
+
     return (
         <View style={styles.controlsRow}>
             <Pressable
                 style={[styles.button, style]}
-                onPress={() => {
-                    if (interval.current !== null) onPress();
-                }}
+                onPress={handlePress}
                 onPressIn={onPressIn}
                 onPressOut={onPressOut}
             >
