@@ -1,53 +1,138 @@
-import { FlatList, Image, Pressable, StyleSheet, Text, View } from "react-native";
-import { useGlobals } from "../provider";
+import { FlatList, Image, ImageBackground, Pressable, StyleSheet, Text, View } from "react-native";
+import { useProducts } from "../provider";
 import { Product } from "../../database/repositories/products";
-import { useState } from "react";
+import React, { useCallback, useRef, useState } from "react";
 import { EditProduct } from "./overlay";
 import { getProductIconDestination } from "@/src/administration/icons";
 import defaultIcon from "./../../../assets/default-user-icon.png";
-
+import Currency from "../../currency";
+import statics from "@/src/static";
 
 const ADD = "+";
 const SUB = "-";
+const COLUMNS = 2;
+const GAP = 3;
+const CARD_WIDTH = 100 / COLUMNS - GAP;
 
-function Button(props: { product: Product, style: any, onPress: (id: number) => void, text: string }) {
-    return (
-        <Pressable 
-            style={[styles.button, props.style]} 
-            onPress={() => props.onPress(props.product.id)}
-        >
-            <Text style={styles.buttonText}>{props.text}</Text>
-        </Pressable>        
-    );
-}
-
-function ProductIcon({ id }: { id: number }) {
-    const [error, setError] = useState(false);
-    const userIcon = getProductIconDestination(id);
-    const source = error ? defaultIcon : { uri: userIcon };
-
-    if (__DEV__) {
-        const fileName = error ? defaultIcon : userIcon;
-        console.log(`userIcon[${id}]: ${fileName}`);
-    }
-
+const DefaultIcon = React.memo(function DefaultIcon() {
     return (
         <Image
-            source={source}
+            source={defaultIcon}
             style={styles.image}
-            alt={`icon ${id}`}
-            onError={(event) => {
-                if (__DEV__) {
-                    console.log(`image load error: ${event.nativeEvent.error}`);
-                }
-                setError(true);
-            }}
+            alt={`default product icon`}
         />
+    );
+});
+
+const ProductIcon = React.memo(function ProductIcon({ id }: { id: number }) {
+    const [loaded, setLoaded] = useState(false);
+    const userIcon = { uri: getProductIconDestination(id) };
+
+    if (__DEV__ && loaded) console.log(`ProductIcon[${id}] loaded succesfully`);
+    
+    return (
+        <>
+            {loaded 
+                ? <Image
+                    source={userIcon}
+                    style={styles.image}
+                    alt={`icon ${id}`}
+                    onLoad={() => setLoaded(true)}
+                    onError={() => setLoaded(false)}
+                />
+                : <DefaultIcon />
+            }
+        </>
+    );
+});
+
+function ControlsRow({ button, description, price, onPress, onHeld, style }: {
+    button: string,
+    description: string | number | boolean,
+    price: Currency | number,
+    onPress: () => void,
+    onHeld: () => void,
+    style: typeof styles.sub | typeof styles.add,
+}) {
+    const interval = useRef<ReturnType<typeof setInterval> | null>(null);
+    const onPressIn = () => {
+        interval.current = setInterval(() => {
+            onHeld();
+        }, 500);
+    };
+
+    const onPressOut = () => {
+        if (interval.current) {
+            clearInterval(interval.current);
+            interval.current = null;
+        }
+    };
+    return (
+        <View style={styles.controlsRow}>
+            <Pressable
+                style={[styles.button, style]}
+                onPress={() => {
+                    if (interval.current !== null) onPress();
+                }}
+                onPressIn={onPressIn}
+                onPressOut={onPressOut}
+            >
+                <Text style={styles.buttonText}>{button}</Text>
+            </Pressable>
+            <View style={styles.textCell}>
+                <Text style={styles.controlsText}>{description}</Text>
+                <Text style={styles.controlsText}>{price.toString(5)}</Text>
+            </View>
+        </View>
     );
 }
 
+const ProductCard = React.memo(function ProductCard({
+    item, quantity, sellProduct, onEdit,
+}: {
+    item: Product;
+    quantity: number;
+    sellProduct: (key: number, increase: boolean, multiplier?: number) => void;
+    onEdit: () => void;
+}) {
+    const active = 0 < quantity;
+    const basePrice = new Currency(item.price);
+    const fullPrice = new Currency(item.price * quantity);
+
+    return (
+        <Pressable
+            style={[styles.card, active && styles.activeCard]}
+            onLongPress={onEdit}
+            delayLongPress={500}
+        >
+            <ProductIcon id={item.id} />
+            <View style={styles.overlay}>
+                <View style={styles.controlsBlock}>
+                    <ControlsRow 
+                        button={ADD} 
+                        description={quantity} 
+                        price={fullPrice} 
+                        style={styles.add} 
+                        onPress={() => sellProduct(item.id, true)}
+                        onHeld={() => sellProduct(item.id, true, 5)}
+                    />
+                    <View style={styles.divider} />
+                    <ControlsRow 
+                        button={SUB} 
+                        description={item.name} 
+                        price={basePrice} 
+                        style={styles.sub} 
+                        onPress={() => sellProduct(item.id, false)}
+                        onHeld={() => sellProduct(item.id, false, 5)}
+                    />
+                </View>
+            </View>
+        </Pressable>
+    );
+});
+
 export default function Catalog() {
-    const { productList, sellingList, sellProduct } = useGlobals();
+    const { productList, sellingList, sellProduct } = useProducts();
     const [editProduct, setEditProduct] = useState<Product | null>(null);
 
     if (__DEV__) {
@@ -59,66 +144,39 @@ export default function Catalog() {
             }
         });
 
-        console.log(list);
+        console.log(`Selected products: ${JSON.stringify(list)}`);
     }
 
-    const increment = (id: number) => sellProduct(id, true);
-    const decrement = (id: number) => sellProduct(id, false);
-
-    const renderItem = ({ item }: { item: Product }) => {
-        const quantity = sellingList.get(item.id) ?? 0;
-        const _active = 0 < quantity;
-        
-        return (
-
-            <Pressable
-                style={styles.card}
-                onLongPress={() => setEditProduct(item)}
-                delayLongPress={500}
-            >
-                <ProductIcon  id={item.id}/>
-                <Text style={styles.name}>{item.name}</Text>
-
-                <View style={styles.controls}>
-                    <Button 
-                        product={item} 
-                        style={styles.minus} 
-                        onPress={decrement}
-                        text={SUB}
-                    />
-
-                    <View style={styles.quantity}>
-                        <Text style={styles.quantityText}>{quantity}</Text>
-                    </View>
-
-                    <Button 
-                        product={item} 
-                        style={styles.plus} 
-                        onPress={increment} 
-                        text={ADD}
-                    />
-                </View>
-            </Pressable>
-        );
-    }
+    const renderItem = useCallback(({ item }: { item: Product }) => (
+        <ProductCard
+            item={item}
+            quantity={sellingList.get(item.id) ?? 0}
+            sellProduct={sellProduct}
+            onEdit={() => setEditProduct(item)}
+        />
+    ), [sellingList]);
 
     return (
         <View style={styles.container}>
             <FlatList
                 data={productList}
-                numColumns={2}
+                numColumns={COLUMNS}
                 keyExtractor={item => item.id.toString()}
+                contentContainerStyle={styles.listContent}
                 renderItem={renderItem}
             />
             {editProduct &&
                 <EditProduct
                     product={editProduct}
-                    exit={() => setEditProduct(null)} 
+                    exit={() => setEditProduct(null)}
                 />
             }
         </View>
     );
 }
+
+const { color, border } = statics;
+const { width } = border;
 
 const styles = StyleSheet.create({
     image: {
@@ -127,84 +185,104 @@ const styles = StyleSheet.create({
         left: 0,
         width: '100%',
         height: '100%',
-        resizeMode: 'cover',
+    },
+
+    listContent: {
+        paddingHorizontal: `${GAP / 2}%`,
+        paddingVertical: `${GAP / 2}%`,
     },
 
     card: {
+        width: `${CARD_WIDTH}%`,
+        aspectRatio: 1,
+        marginHorizontal: `${GAP / 2}%`,
+        marginVertical: `${GAP / 2}%`,
+        backgroundColor: color.overlay,
+        borderRadius: 15,
+        borderWidth: width.default,
+        borderColor: color.accent,
         position: 'relative',
-        width: 200,
-        height: 200,
-        backgroundColor: '#d9d9d9',
-        borderRadius: 34,
-        borderColor: '#000000',
-        borderWidth: 2,
-        paddingTop: 80,
-        paddingBottom: 30,
-        margin: 3,
-        alignItems: 'center',
         overflow: 'hidden',
     },
 
+    activeCard: {
+        borderColor: color.highlight,
+        borderWidth: 4,
+    },
+
     container: {
-        height: "80%",
+        width: `${(100 / 6) * (6 - 4)}%`,
+        height: "100%",
         flex: 1,
-        width: 'auto',
+    },
+
+    overlay: {
+        position: 'absolute',
+        left: 0,
+        right: 0,
+        bottom: 0,
     },
 
     name: {
         fontSize: 18,
-        color: '#000000',
+        color: color.accent,
+        marginBottom: 6,
+        fontFamily: "monospace",
     },
 
-    controls: {
-        height: 45,
-        width: 140,
+    controlsBlock: {
+        width: '100%',
+        borderTopWidth: width.default,
+        borderTopColor: color.accent,
+        // backgroundColor: color.default,
+    },
+
+    controlsRow: {
         flexDirection: 'row',
-        alignItems: 'center',
-        borderWidth: 2,
-        borderColor: '#000000',
-        borderRadius: 25,
-        overflow: 'hidden',
-        position: 'absolute',
-        // left: 0,
-        // right: 0,
-        // bottom: 0,
+        height: 30,
+    },
+
+    divider: {
+        height: width.default,
+        backgroundColor: color.accent,
     },
 
     button: {
-        width: 44,
-        height: 44,
+        width: 30,
         alignItems: 'center',
         justifyContent: 'center',
-        borderRadius: 22,
+        fontFamily: "monospace",
+        borderRightWidth: width.default,
+        borderRightColor: color.accent,
     },
 
-    minus: {
+    sub: {
         backgroundColor: '#ff3038',
     },
 
-    plus: {
+    add: {
         backgroundColor: '#00c76f',
     },
 
     buttonText: {
-        color: '#ffffff',
-        fontSize: 22,
-        fontWeight: '500',
+        color: color.default,
+        fontSize: 18,
+        fontWeight: '700',
     },
 
-    quantity: {
+    textCell: {
         flex: 1,
-        height: 42,
-        // backgroundColor: '#e9e9e9',
+        flexDirection: 'row',
+        justifyContent: 'space-between',
         alignItems: 'center',
-        justifyContent: 'center',
+        paddingHorizontal: 10,
+        backgroundColor: color.overlay,
     },
 
-    quantityText: {
-        fontSize: 20,
-        fontWeight: '500',
-        color: '#000000',
+    controlsText: {
+        fontSize: 16,
+        fontWeight: '700',
+        color: color.accent,
+        fontFamily: "monospace",
     },
-
 })
