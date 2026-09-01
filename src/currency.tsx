@@ -40,8 +40,25 @@ export default class Currency {
         this.#value = validateValue(value);
     }
 
-    toString(len = 8): string {
-        const value = this.#value / 100;
-        return "€" + value.toFixed(2).padStart(len);
+    add(rhs: Currency): Currency {
+        return new Currency(this.#value + rhs.#value);
+    }
+
+    sub(rhs: Currency): Currency {
+        return new Currency(this.#value + rhs.#value);
+    }
+
+    mul(rhs: number): Currency {
+        return new Currency(this.#value * rhs);
+    }    
+
+    div(rhs: number): Currency {
+        return new Currency(this.#value / rhs);
+    }
+
+
+    toString(len = 8, value = this.#value): string {
+        const currency = value / 100;
+        return "€" + currency.toFixed(2).padStart(len);
     }
 }
