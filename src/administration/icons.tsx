@@ -1,5 +1,9 @@
 import * as ImagePicker from 'expo-image-picker';
 import { Directory, File, Paths, RelocationOptions } from 'expo-file-system';
+import React, { useState } from 'react';
+import { Image, StyleSheet } from 'react-native';
+import defaultUserIcon from "@/assets/default-user-icon.png";
+import defaultProductIcon from "@/assets/default-user-icon.png";
 
 const USER_ICON_FOLDER_NAME: string = "user-icons";
 function initUserIconDir(): Directory {
@@ -76,3 +80,58 @@ export async function selectProductIcon(id: number): Promise<void> {
     const path = getProductIconDestination(id);
     await storeImage(path);
 }
+
+type IconProps = { id: number };
+
+function createIconComponent(
+    label: string,
+    getUri: (id: number) => string,
+    defaultSource: number,
+) {
+    const DefaultIcon = React.memo(function DefaultIcon() {
+        return (
+            <Image
+                source={defaultSource}
+                style={styles.image}
+                alt={`default ${label} icon`}
+            />
+        );
+    });
+
+    const Icon = React.memo(function Icon({ id }: IconProps) {
+        const [loaded, setLoaded] = useState(false);
+        const source = { uri: getUri(id) };
+
+        if (__DEV__ && loaded) console.log(`${label}[${id}] loaded succesfully`);
+
+        return (
+            <>
+                {!loaded && <DefaultIcon />}
+                <Image
+                    source={source}
+                    style={styles.image}
+                    alt={`icon ${id}`}
+                    onLoad={() => setLoaded(true)}
+                    onError={() => setLoaded(false)}
+                />
+            </>
+        );
+    });
+
+    Icon.displayName = label;
+    return Icon;
+}
+
+export const UserIcon = createIconComponent("UserIcon", getUserIconDestination, defaultUserIcon);
+export const ProductIcon = createIconComponent("ProductIcon", getProductIconDestination, defaultProductIcon);
+
+const styles = StyleSheet.create({
+    image: {
+        top: 0,
+        left: 0,
+        bottom: 0,
+        right: 0,
+        position: 'absolute',
+        resizeMode: 'cover',
+    },
+});
