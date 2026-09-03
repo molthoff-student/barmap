@@ -196,6 +196,8 @@ const styles = StyleSheet.create({
         width: `${(100 / 6) * (6 - 4)}%`,
         height: "100%",
         flex: 1,
+        borderRightColor: color.accent,
+        borderRightWidth: width.section
     },
 
     overlay: {

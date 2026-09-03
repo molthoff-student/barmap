@@ -10,10 +10,15 @@ import { useFactions } from '../provider';
 import { exportDatabaseToExcel } from '@/src/administration/excel-export';
 import { useDatabase } from '@/src/database/provider';
 import statics from '@/src/static';
+import { useCallback, useState } from 'react';
+
+const Statistics = 
 
 export default function Tabbar() {
     const { database } = useDatabase();
     const { factionList, factionIdx, setFactionIdx } = useFactions();
+    const [overlay, setOverlay] = useState(false);
+    const exit = useCallback(() => setOverlay(false), []);
 
     return (
         <View style={styles.tabsContainer}>
@@ -21,6 +26,7 @@ export default function Tabbar() {
                 style={styles.menuButton}
                 onPress={() => exportDatabaseToExcel(database.inner)}
             >
+                {/* Who needs image assets lmao */}
                 <View style={styles.menuLine} />
                 <View style={styles.menuLine} />
                 <View style={styles.menuLine} />
@@ -109,6 +115,8 @@ const styles = StyleSheet.create({
     },
 
     tabText: {
+        fontFamily: "monospace",
+        fontWeight: '700',
         fontSize: 18,
         color: color.accent,
     },

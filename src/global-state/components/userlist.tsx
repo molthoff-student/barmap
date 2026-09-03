@@ -6,7 +6,7 @@ import { EditUser } from "./overlay";
 import statics from "@/src/static";
 import { User } from "@/src/database/repositories/users";
 
-const COLUMNS = 4;
+export const COLUMNS = 4;
 const GAP = 1.5;
 const CARD_WIDTH = 100 / COLUMNS - GAP;
 
