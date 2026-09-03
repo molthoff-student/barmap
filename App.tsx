@@ -5,6 +5,7 @@ import Tabbar from './src/global-state/components/tabbar';
 import { GlobalsProvider } from './src/global-state/provider';
 import UserList from './src/global-state/components/userlist';
 import Catalog from './src/global-state/components/catalog';
+import { Utilitybar } from './src/global-state/components/utilitybar';
 
 export default function App() {
     if (__DEV__) console.log("Rendering App....");
@@ -17,6 +18,7 @@ export default function App() {
                         <UserList />
                         <Catalog />
                     </View>
+                    <Utilitybar />
                     {__DEV__ && <StatusBar style="auto" />}
                 </View>
             </GlobalsProvider>
@@ -28,8 +30,8 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
         backgroundColor: '#FFFFFF',
-        marginTop: '2%',
-        marginBottom: '2%'
+        // marginTop: '3%',
+        // marginBottom: '2%'
     },
 
     mainContent: {
