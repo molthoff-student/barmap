@@ -3,8 +3,8 @@ import { selectUserIcon, selectProductIcon } from "@/src/administration/icons";
 import Currency from "@/src/currency";
 import { useDatabase } from "@/src/database/provider";
 import { User } from "@/src/database/repositories/users";
-import { ReactNode, useState } from "react";
-import { Alert, Button, Modal, StyleSheet, Text, TextInput, View } from "react-native";
+import { ReactNode, useCallback, useState } from "react";
+import { Alert, Button, Modal, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import { useProducts, useUsers } from "../provider";
 import { Product } from "@/src/database/repositories/products";
 import statics from "@/src/static";
@@ -15,48 +15,56 @@ export type UserTag = {
     balance: Currency
 }
 
+export function Overlay({ children, exit }: {
+    exit: () => void;
+    children?: ReactNode;
+}) {
+    return (
+        <Modal transparent animationType="fade">
+            <View style={styles.overlay}>
+                <Pressable
+                    style={[StyleSheet.absoluteFill, styles.background]}
+                    onPress={exit}
+                />
+
+                <View style={styles.content}>
+                    {children}
+                </View>
+            </View>
+        </Modal>
+    );
+}
+
 export function AdminOverlay({ exit, children }: {
     exit: () => void,
     children: ReactNode,
 }) {
-
-
     const [password, setPassword] = useState("");
     const [success, setSuccess] = useState(false);
 
-
-    const checkPassword = async () => {
+    const checkPassword = useCallback(async () => {
         const hash = await generateSha256(password);
         const pass = process.env.EXPO_PUBLIC_ADMIN_ACCESS_KEY;
-
-        if (__DEV__) console.log(`GIVEN_ACCESS_KEY: ${hash}`);
-        if (__DEV__) console.log(`ADMIN_ACCESS_KEY: ${pass}`);
-        if (__DEV__) console.log(`password check: ${hash === pass ? 'success' : 'failed'}`);
         setSuccess(hash === pass);
-    }
+    }, [password]);
 
     return (
-        <Modal transparent animationType="fade">
-            <View style={styles.overlay}>
-                {success 
-                ?   <>{children}</>
-                :   <View style={styles.popup}>
-                        <Text style={styles.title}>Beheerder toegang</Text>
-
-                        <TextInput
-                            style={styles.passwordInput}
-                            value={password}
-                            onChangeText={setPassword}
-                            secureTextEntry
-                            placeholder="Wachtwoord"
-                        />
-
-                        <Button title="Ga door" onPress={checkPassword} />
-                        <Button title="Sluit menu" onPress={exit} />
-                    </View>
-                }
-            </View>
-        </Modal>
+        <Overlay exit={exit}>
+            {success 
+            ?   <>{children}</>
+            :   <View style={styles.popup}>
+                    <Text style={styles.title}>Beheerder toegang</Text>
+                    <TextInput
+                        style={styles.passwordInput}
+                        value={password}
+                        onChangeText={setPassword}
+                        secureTextEntry
+                        placeholder="Wachtwoord"
+                    />
+                    <Button title="Ga door" onPress={checkPassword} />
+                </View>
+            }
+        </Overlay>
     );
 }
 
@@ -102,7 +110,6 @@ export function EditUser({ user, exit }: {
         }
 
         updateUsers();
-
         exit();
     }
 
@@ -129,7 +136,6 @@ export function EditUser({ user, exit }: {
                 </View>
                 <Button title="Verander profielfoto" onPress={() => selectUserIcon(user.id)} />
                 <Button title="Bewaar" onPress={saveUserEdit} />
-                <Button title="Sluit menu" onPress={exit} />
             </View> 
         </AdminOverlay>
     );
@@ -167,11 +173,8 @@ export function EditProduct({ product, exit }: {
                 `${reason}`
             );
         }
-        
 
-            
         updateProducts();
-
         exit();
     }
 
@@ -198,7 +201,6 @@ export function EditProduct({ product, exit }: {
                 </View>
                 <Button title="Verander afbeelding" onPress={() => selectProductIcon(product.id)} />
                 <Button title="Bewaar" onPress={saveProductEdit} />
-                <Button title="Sluit menu" onPress={exit} />
             </View>         
         </AdminOverlay>
     );
@@ -207,10 +209,21 @@ export function EditProduct({ product, exit }: {
 const { color, border } = statics;
 const { width } = border;
 const styles = StyleSheet.create({
+
     overlay: {
         flex: 1,
         justifyContent: "center",
         alignItems: "center",
+    },
+
+    content: {
+        width: "100%",
+        flex: 1,
+        justifyContent: "center",
+        alignItems: "center",
+    },
+
+    background: {
         backgroundColor: "rgba(0, 0, 0, 0.5)",
     },
 

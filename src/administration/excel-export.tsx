@@ -1,4 +1,3 @@
-// exportDatabaseToExcel.ts
 import * as SQLite from 'expo-sqlite';
 import { File, Paths } from 'expo-file-system';
 import * as LegacyFileSystem from 'expo-file-system/legacy'; // SAF lives only in the legacy module
@@ -84,7 +83,7 @@ async function saveViaShareSheet(base64: string, fileName: string): Promise<void
     }
 
     await Sharing.shareAsync(file.uri, {
-        UTI: 'public.item', // generic UTI, reliably surfaces "Save to Files"
+        UTI: 'public.item',
         dialogTitle: 'Save database export',
     });
 }
