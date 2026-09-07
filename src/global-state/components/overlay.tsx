@@ -4,7 +4,7 @@ import Currency from "@/src/currency";
 import { useDatabase } from "@/src/database/provider";
 import { User } from "@/src/database/repositories/users";
 import { ReactNode, useCallback, useState } from "react";
-import { Alert, Button, Modal, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
+import { Alert, Button, Modal, Pressable, StyleProp, StyleSheet, Text, TextInput, View, ViewStyle } from "react-native";
 import { useProducts, useUsers } from "../provider";
 import { Product } from "@/src/database/repositories/products";
 import statics from "@/src/static";
@@ -15,18 +15,20 @@ export type UserTag = {
     balance: Currency
 }
 
-export function Overlay({ children, exit }: {
-    exit: () => void;
+export function Overlay({ children, style, exit }: {
+    exit?: () => void;
+    style?: StyleProp<ViewStyle>
     children?: ReactNode;
 }) {
     return (
         <Modal transparent animationType="fade">
             <View style={styles.overlay}>
-                <Pressable
-                    style={[StyleSheet.absoluteFill, styles.background]}
-                    onPress={exit}
-                />
-
+                {exit !== undefined &&
+                    <Pressable
+                        style={[StyleSheet.absoluteFill, styles.background, style]}
+                        onPress={exit}
+                    />
+                }
                 <View style={styles.content}>
                     {children}
                 </View>

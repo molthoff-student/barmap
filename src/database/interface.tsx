@@ -8,8 +8,11 @@ import TransactionRepository from './repositories/transactions';
 const INSERT_TEST_DATA = true;
 const databaseName = "barmap-database";
 
-const DEFAULT_GIVEN: Currency = new Currency({ integer: 10000, decimal: 0 });
-const DEFAULT_SPENT: Currency = new Currency({ integer: 50, decimal: 0 });
+const min =  1000;
+const max = 10000;
+const rng = () => new Currency(Math.floor(Math.random() * (max - min) + min));
+
+const DEFAULT_SPENT: Currency = new Currency();
 const DEFAULT_PRICE: Currency = new Currency({ integer: 1, decimal: 0 });
 
 const TEST_FACTION_LIST = [
@@ -22,18 +25,18 @@ const TEST_FACTION_LIST = [
 ]
 
 const TEST_USER_LIST = [
-    { username: "Mick Olthoff", given_money: DEFAULT_GIVEN, spent_money: DEFAULT_SPENT },
-    { username: "Noah Faas", given_money: DEFAULT_GIVEN, spent_money: DEFAULT_SPENT  },
-    { username: "Cas Kluiters", given_money: DEFAULT_GIVEN, spent_money: DEFAULT_SPENT  },
-    { username: "Gerco Hogeveen", given_money: DEFAULT_GIVEN, spent_money: DEFAULT_SPENT  },
-    { username: "Piet Klaas", given_money: DEFAULT_GIVEN, spent_money: DEFAULT_SPENT  },
-    { username: "Joep Van Der Velde", given_money: DEFAULT_GIVEN, spent_money: DEFAULT_SPENT  },
-    { username: "Theo Turbo", given_money: DEFAULT_GIVEN, spent_money: DEFAULT_SPENT  },
-    { username: "Bram", given_money: DEFAULT_GIVEN, spent_money: DEFAULT_SPENT  },
-    { username: "Owen Huijskes", given_money: DEFAULT_GIVEN, spent_money: DEFAULT_SPENT  },
-    { username: "Rutger Pax", given_money: DEFAULT_GIVEN, spent_money: DEFAULT_SPENT  },
-    { username: "Cay Noya", given_money: DEFAULT_GIVEN, spent_money: DEFAULT_SPENT  },
-    { username: "16characters1234", given_money: DEFAULT_GIVEN, spent_money: DEFAULT_SPENT  },
+    { username: "Mick Olthoff", given_money: rng(), spent_money: DEFAULT_SPENT },
+    { username: "Noah Faas", given_money: rng(), spent_money: DEFAULT_SPENT  },
+    { username: "Cas Kluiters", given_money: rng(), spent_money: DEFAULT_SPENT  },
+    { username: "Gerco Hogeveen", given_money: rng(), spent_money: DEFAULT_SPENT  },
+    { username: "Piet Klaas", given_money: rng(), spent_money: DEFAULT_SPENT  },
+    { username: "Joep Van Der Velde", given_money: rng(), spent_money: DEFAULT_SPENT  },
+    { username: "Theo Turbo", given_money: rng(), spent_money: DEFAULT_SPENT  },
+    { username: "Bram", given_money: rng(), spent_money: DEFAULT_SPENT  },
+    { username: "Owen Huijskes", given_money: rng(), spent_money: DEFAULT_SPENT  },
+    { username: "Rutger Pax", given_money: rng(), spent_money: DEFAULT_SPENT  },
+    { username: "Cay Noya", given_money: rng(), spent_money: DEFAULT_SPENT  },
+    { username: "16characters1234", given_money: rng(), spent_money: DEFAULT_SPENT  },
 ];
 
 const TEST_PRODUCT_LIST = [
@@ -104,7 +107,7 @@ export default class Database {
                     try {
                         const data: User = {
                             id: 0,
-                            username: user.username + i.toString(),
+                            username: user.username + ' ' + i.toString(),
                             given_money: user.given_money,
                             spent_money: user.spent_money,
                             balance: user.given_money.sub(user.spent_money),

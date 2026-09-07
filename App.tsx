@@ -6,13 +6,14 @@ import { GlobalsProvider } from './src/global-state/provider';
 import UserList from './src/global-state/components/userlist';
 import Catalog from './src/global-state/components/catalog';
 import { Utilitybar } from './src/global-state/components/utilitybar';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function App() {
     if (__DEV__) console.log("Rendering App....");
     return (
         <DatabaseProvider>
             <GlobalsProvider>
-                <View style={styles.container}>
+                <SafeAreaView style={styles.container}>
                     <Tabbar />
                     <View style={styles.mainContent}>
                         <UserList />
@@ -20,7 +21,7 @@ export default function App() {
                     </View>
                     <Utilitybar />
                     {__DEV__ && <StatusBar style="auto" />}
-                </View>
+                </SafeAreaView>
             </GlobalsProvider>
         </DatabaseProvider>
     );
