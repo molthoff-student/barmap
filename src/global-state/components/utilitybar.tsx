@@ -28,7 +28,7 @@ function UtilityButton({ label, onPress }: {
     );
 }
 
-const AddUser = React.memo(function AddUser({ exit }: { exit: () => void}) {
+function AddUser({ exit }: { exit: () => void}) {
     const { factionList, factionIdx } = useFactions();
     const [user, setUser] = useState<User>({
         id: 0,
@@ -45,7 +45,7 @@ const AddUser = React.memo(function AddUser({ exit }: { exit: () => void}) {
             </View>
         </Overlay>
     );
-});
+}
 
 export function Utilitybar() {
     const { productList, sellingList } = useProducts();
@@ -55,6 +55,7 @@ export function Utilitybar() {
 
     const UtilityButtonList: UtilityButtonData[] = [
         { label: "Voeg gebruiker toe", component: <AddUser exit={exit} /> },
+        { label: "Voeg speltak toe", component: <Overlay exit={exit} /> },
         { label: "Voeg product toe", component: <Overlay exit={exit} /> },
         { label: "Schrijf producten af", component: <Overlay exit={exit} /> },
     ];
@@ -77,15 +78,17 @@ export function Utilitybar() {
     if (__DEV__) console.log(`overlay: ${overlay}`);
 
     return (
-        <View style={styles.container}>
-            <View style={styles.buttonGroup}>
-                <UtilityButtons />
+        <>
+            <View style={styles.container}>
+                <View style={styles.buttonGroup}>
+                    <UtilityButtons />
+                </View>
+                <View style={styles.totalBlock}>
+                    <Text style={styles.totalText}>Totaal: {total.toString()}</Text>
+                </View>
             </View>
-            <View style={styles.totalBlock}>
-                <Text style={styles.totalText}>Totaal: {total.toString()}</Text>
-            </View>
-            {typeof overlay === "number" && UtilityButtonList[overlay].component}
-        </View>
+            { typeof overlay === "number" && UtilityButtonList[overlay].component }
+        </>
     );
 }
 

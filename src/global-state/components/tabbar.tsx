@@ -4,6 +4,7 @@ import {
   Pressable,
   StyleSheet,
   ScrollView,
+  GestureResponderEvent,
 } from 'react-native';
 
 import { useFactions } from '../provider';
@@ -11,57 +12,78 @@ import { exportDatabaseToExcel } from '@/src/administration/excel-export';
 import { useDatabase } from '@/src/database/provider';
 import statics from '@/src/static';
 import { useCallback, useState } from 'react';
+import { Overlay } from './overlay';
 
-const Statistics = 
+const { color, border } = statics;
+const { width } = border;
+
+function Burger({ onPress }: {
+    onPress?: ((event: GestureResponderEvent) => void) | null | undefined
+}) {
+    // Who needs image assets lmao
+    return (
+        <Pressable
+            style={styles.menuButton}
+            onPress={onPress}
+        >
+            <View style={styles.menuLine} />
+            <View style={styles.menuLine} />
+            <View style={styles.menuLine} />
+        </Pressable>
+    );
+}
+
+function Statistics({ exit }: {
+    exit: () => void,
+}) {
+
+    return (
+        <Overlay style={styles.overlay}>
+
+        </Overlay>
+    );
+}
 
 export default function Tabbar() {
-    const { database } = useDatabase();
     const { factionList, factionIdx, setFactionIdx } = useFactions();
     const [overlay, setOverlay] = useState(false);
     const exit = useCallback(() => setOverlay(false), []);
 
     return (
-        <View style={styles.tabsContainer}>
-            <Pressable 
-                style={styles.menuButton}
-                onPress={() => exportDatabaseToExcel(database.inner)}
-            >
-                {/* Who needs image assets lmao */}
-                <View style={styles.menuLine} />
-                <View style={styles.menuLine} />
-                <View style={styles.menuLine} />
-            </Pressable>
-            <ScrollView
-                horizontal={true}
-                showsHorizontalScrollIndicator={false}
-                contentContainerStyle={styles.tabs}
-            >   
-                {factionList.map((faction, index) => {
-                    const selected = index === factionIdx;
-                    return (
-                        <Pressable
-                            key={index}
-                            onPress={() => setFactionIdx(index)}
-                            style={[
-                                styles.tab,
-                                selected && styles.selectedTab,
-                                index === 0 && styles.firstTab,
-                            ]}
-                        >
-                            <Text style={styles.tabText}>
-                                {faction}
-                            </Text>
-                        </Pressable>
-                    );
-                })}
-            </ScrollView>
-        </View>
+        <>
+            <View style={styles.tabsContainer}>
+                <Burger onPress={() => setOverlay(true)} />
+                <ScrollView
+                    horizontal={true}
+                    showsHorizontalScrollIndicator={false}
+                    contentContainerStyle={styles.tabs}
+                >   
+                    {factionList.map((faction, index) => {
+                        const selected = index === factionIdx;
+                        return (
+                            <Pressable
+                                key={index}
+                                onPress={() => setFactionIdx(index)}
+                                style={[
+                                    styles.tab,
+                                    selected && styles.selectedTab,
+                                    index === 0 && styles.firstTab,
+                                ]}
+                            >
+                                <Text style={styles.tabText}>
+                                    {faction}
+                                </Text>
+                            </Pressable>
+                        );
+                    })}
+                </ScrollView>
+            </View>
+            {overlay && <Statistics exit={exit} />}
+        </>
     );
 }
 
 const TAB_HEIGHT = 40;
-const { color, border } = statics;
-const { width } = border;
 
 const styles = StyleSheet.create({
     tabsContainer: {
@@ -120,4 +142,8 @@ const styles = StyleSheet.create({
         fontSize: 18,
         color: color.accent,
     },
+
+    overlay: {
+        backgroundColor: color.default,
+    }
 });
