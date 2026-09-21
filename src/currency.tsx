@@ -45,7 +45,7 @@ export default class Currency {
     }
 
     sub(rhs: Currency): Currency {
-        return new Currency(this.#value + rhs.#value);
+        return new Currency(this.#value - rhs.#value);
     }
 
     mul(rhs: number): Currency {
