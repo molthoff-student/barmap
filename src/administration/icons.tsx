@@ -1,9 +1,9 @@
-import * as ImagePicker from 'expo-image-picker';
-import { Directory, File, Paths, RelocationOptions } from 'expo-file-system';
-import React, { useState } from 'react';
-import { Image, StyleSheet } from 'react-native';
+import * as ImagePicker from "expo-image-picker";
+import { Directory, File, Paths, RelocationOptions } from "expo-file-system";
+import React, { useState } from "react";
+import { Image, StyleSheet, View } from "react-native";
 import defaultUserIcon from "@/assets/default-user-icon.png";
-import defaultProductIcon from "@/assets/default-user-icon.png";
+import defaultProductIcon from "@/assets/default-product-icon.png";
 
 const USER_ICON_FOLDER_NAME: string = "user-icons";
 function initUserIconDir(): Directory {
@@ -17,7 +17,7 @@ const USER_ICON_DIR = initUserIconDir();
 
 export const getUserIconDestination = (id: number) => {
     return `${USER_ICON_DIR.uri}${id}.jpg`;
-}
+};
 
 const PRODUCT_FOLDER_NAME: string = "product-icons";
 function initProductIconDir(): Directory {
@@ -31,11 +31,11 @@ const PRODUCT_ICON_DIR = initProductIconDir();
 
 export const getProductIconDestination = (id: number) => {
     return `${PRODUCT_ICON_DIR.uri}${id}.jpg`;
-}
+};
 
 export async function selectImage(): Promise<File | null> {
     const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ['images'],
+        mediaTypes: ["images"],
         allowsEditing: true,
         quality: 1,
         aspect: [1, 1],
@@ -61,14 +61,14 @@ export async function storeImage(path: string): Promise<void> {
     const destination = new File(path);
     const options: RelocationOptions = {
         overwrite: true,
-    }
+    };
 
-    await source.copy(destination, options)
-        .catch(reason => {
-            throw new Error(`copy image error: ${reason}`);
-        });
+    await source.copy(destination, options).catch((reason) => {
+        throw new Error(`copy image error: ${reason}`);
+    });
 
-    if (__DEV__) console.log(`succesfully uploaded image to '${destination.uri}'`);
+    if (__DEV__)
+        console.log(`succesfully uploaded image to '${destination.uri}'`);
 }
 
 export async function selectUserIcon(id: number): Promise<void> {
@@ -102,10 +102,11 @@ function createIconComponent(
         const [loaded, setLoaded] = useState(false);
         const source = { uri: getUri(id) };
 
-        if (__DEV__ && loaded) console.log(`${label}[${id}] loaded succesfully`);
+        if (__DEV__ && loaded)
+            console.log(`${label}[${id}] loaded succesfully`);
 
         return (
-            <>
+            <View style={{ width: "100%", height: "100%" }}>
                 {!loaded && <DefaultIcon />}
                 <Image
                     source={source}
@@ -114,7 +115,7 @@ function createIconComponent(
                     onLoad={() => setLoaded(true)}
                     onError={() => setLoaded(false)}
                 />
-            </>
+            </View>
         );
     });
 
@@ -122,16 +123,21 @@ function createIconComponent(
     return Icon;
 }
 
-export const UserIcon = createIconComponent("UserIcon", getUserIconDestination, defaultUserIcon);
-export const ProductIcon = createIconComponent("ProductIcon", getProductIconDestination, defaultProductIcon);
+export const UserIcon = createIconComponent(
+    "UserIcon",
+    getUserIconDestination,
+    defaultUserIcon,
+);
+export const ProductIcon = createIconComponent(
+    "ProductIcon",
+    getProductIconDestination,
+    defaultProductIcon,
+);
 
 const styles = StyleSheet.create({
     image: {
-        top: 0,
-        left: 0,
-        bottom: 0,
-        right: 0,
-        position: 'absolute',
-        resizeMode: 'cover',
+        width: "100%",
+        height: "100%",
+        resizeMode: "cover",
     },
 });
