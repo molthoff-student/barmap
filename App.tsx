@@ -1,12 +1,35 @@
-import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, View } from 'react-native';
-import { DatabaseProvider } from './src/database/provider';
-import Tabbar from './src/global-state/components/tabbar';
-import { GlobalsProvider } from './src/global-state/provider';
-import UserList from './src/global-state/components/userlist';
-import Catalog from './src/global-state/components/catalog';
-import { Utilitybar } from './src/global-state/components/utilitybar';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { StatusBar } from "expo-status-bar";
+import { StyleSheet, View } from "react-native";
+import { DatabaseProvider } from "./src/database/provider";
+import Tabbar from "./src/global-state/components/tabbar";
+import { GlobalsProvider } from "./src/global-state/provider";
+import UserList from "./src/global-state/components/userlist";
+import Catalog from "./src/global-state/components/catalog";
+import { Utilitybar } from "./src/global-state/components/utilitybar";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { useState } from "react";
+import { Records } from "./src/administration/records";
+
+function Window() {
+    const [statistics, setStatistics] = useState(false);
+
+    return (
+        <>
+            {statistics ? (
+                <Records exit={() => setStatistics(false)} />
+            ) : (
+                <>
+                    <Tabbar open={() => setStatistics(true)} />
+                    <View style={styles.mainContent}>
+                        <UserList />
+                        <Catalog />
+                    </View>
+                    <Utilitybar />
+                </>
+            )}
+        </>
+    );
+}
 
 export default function App() {
     if (__DEV__) console.log("Rendering App....");
@@ -14,12 +37,7 @@ export default function App() {
         <DatabaseProvider>
             <GlobalsProvider>
                 <SafeAreaView style={styles.container}>
-                    <Tabbar />
-                    <View style={styles.mainContent}>
-                        <UserList />
-                        <Catalog />
-                    </View>
-                    <Utilitybar />
+                    <Window />
                     {__DEV__ && <StatusBar style="auto" />}
                 </SafeAreaView>
             </GlobalsProvider>
@@ -30,12 +48,12 @@ export default function App() {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#FFFFFF',
+        backgroundColor: "#FFFFFF",
         // marginTop: '3%',
         // marginBottom: '2%'
     },
 
     mainContent: {
-        flexDirection: 'row',
-    }
+        flexDirection: "row",
+    },
 });
