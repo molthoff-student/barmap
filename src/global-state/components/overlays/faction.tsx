@@ -135,7 +135,7 @@ export function FactionManager({ exit }: { exit: () => void }) {
             setAllFactions(allFactions);
         };
         loadProducts();
-    }, [factions]);
+    }, [factions, loadRequest]);
 
     const renderItem = ({ item }: { item: Faction }) => {
         if (__DEV__) console.log(`rendering procuct: ${item.name}`);

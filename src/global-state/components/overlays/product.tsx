@@ -198,7 +198,7 @@ export function ProductManager({ exit }: { exit: () => void }) {
             setAllProducts(allProducts);
         };
         loadProducts();
-    }, [products]);
+    }, [products, loadRequest]);
 
     const renderItem = ({ item }: { item: Product }) => {
         console.log(`rendering procuct: ${item.name}`);

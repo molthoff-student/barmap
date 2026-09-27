@@ -219,7 +219,7 @@ export function UserManager({ exit }: { exit: () => void }) {
             setAllUsers(allUsers);
         };
         loadUsers();
-    }, [users]);
+    }, [users, loadRequest]);
 
     const renderItem = ({ item }: { item: User }) => {
         // console.log(`rendering user: ${item.name}`);
