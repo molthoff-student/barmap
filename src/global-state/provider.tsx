@@ -82,20 +82,29 @@ export function GlobalsProvider({ children }: { children: React.ReactNode }) {
             .then(setFactionList)
             .catch((reason) => {
                 if (__DEV__) console.log(`factionList: ${reason}`);
+                setFactionList([]);
             });
     }, [factions]);
 
     const updateUsers = useCallback(async () => {
-        if (!factionList) {
+        if (!factionList || factionList.length === 0) {
             if (__DEV__) console.log("factionList wasn't loaded yet...");
+            setUserList([]);
+            return;
+        }
+        const faction = factionList[factionIdx] ?? factionList[0];
+        if (!faction) {
+            if (__DEV__) console.log("no faction at factionIdx");
+            setUserList([]);
             return;
         }
         if (__DEV__) console.log("updating userList");
         await users
-            .getUsersByFaction(factionList[factionIdx].name)
+            .getUsersByFaction(faction.name)
             .then(setUserList)
             .catch((reason) => {
                 if (__DEV__) console.log(`userList: ${reason}`);
+                setUserList([]);
             });
         setSelectedUsers(new Set());
     }, [factionList, factionIdx, users]);
@@ -106,6 +115,7 @@ export function GlobalsProvider({ children }: { children: React.ReactNode }) {
             .then(setProductList)
             .catch((reason) => {
                 if (__DEV__) console.log(`productList: ${reason}`);
+                setProductList([]);
             });
     }, [products]);
 
@@ -149,7 +159,8 @@ export function GlobalsProvider({ children }: { children: React.ReactNode }) {
         [productList, sellingList, sellProduct, updateProducts],
     );
 
-    const isLoading = !(factionList && userList && productList);
+    const isLoading =
+        factionList === null || userList === null || productList === null;
 
     if (isLoading) {
         const dbg = __DEV__
