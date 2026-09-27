@@ -1,11 +1,11 @@
 import {
-    Button,
     FlatList,
     StyleProp,
     View,
     ViewStyle,
     TextInput,
     Text,
+    StyleSheet,
 } from "react-native";
 import { AdminOverlay } from "../overlay";
 import { Product } from "@/src/database/repositories/products";
@@ -15,11 +15,13 @@ import { useProducts } from "../../provider";
 import { useDatabase } from "@/src/database/provider";
 import { selectProductIcon } from "@/src/administration/icons";
 import {
+    Button,
     editObjCallback,
     IconPicker,
     sanitizeText,
     Seperator,
     createStyles,
+    styles as sharedStyles,
     ListHeader,
     EditCurrency,
     EditToggle,
@@ -246,4 +248,7 @@ export function ProductManager({ exit }: { exit: () => void }) {
 }
 
 const overlayWidth = "60%";
-const styles = createStyles(overlayWidth);
+const styles = StyleSheet.create({
+    ...createStyles(overlayWidth),
+    ...sharedStyles,
+});
