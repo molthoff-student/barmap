@@ -4,19 +4,19 @@ import * as LegacyFileSystem from "expo-file-system/legacy"; // SAF lives only i
 import * as Sharing from "expo-sharing";
 import * as XLSX from "xlsx";
 import { Platform } from "react-native";
+import UserRepository from "../database/repositories/users";
 
 const { StorageAccessFramework } = LegacyFileSystem;
-
+const androidOsMimeType =
+    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
 export async function exportDatabaseToExcel(
     db: SQLite.SQLiteDatabase,
 ): Promise<void> {
     const base64 = await buildWorkbookBase64(db);
     const fileName = `export_${Date.now()}.xlsx`;
-    const mimeType =
-        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
 
     if (Platform.OS === "android") {
-        await saveViaFolderPicker(base64, fileName, mimeType);
+        await saveViaFolderPicker(base64, fileName, androidOsMimeType);
     } else {
         await saveViaShareSheet(base64, fileName);
     }
@@ -95,7 +95,8 @@ async function saveViaShareSheet(
     file.create();
     file.write(base64, { encoding: "base64" });
 
-    if (!(await Sharing.isAvailableAsync())) {
+    const isShareAvailable = await Sharing.isAvailableAsync();
+    if (!isShareAvailable) {
         throw new Error(
             "exportDatabaseToExcel: sharing is not available on this device.",
         );
