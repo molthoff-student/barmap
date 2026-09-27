@@ -129,7 +129,6 @@ const styles = StyleSheet.create({
         height: 45,
         paddingHorizontal: 10,
         marginBottom: 15,
-        color: color.accent,
         ...fonts.default,
         ...border.input,
     },
