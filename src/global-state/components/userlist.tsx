@@ -107,9 +107,9 @@ const styles = StyleSheet.create({
         width: `${(100 / 6) * COLUMNS}%`,
         height: "100%",
         borderRightWidth: width.section,
-        borderRightColor: color.accent,
+        borderRightColor: color.primary,
         borderLeftWidth: width.section,
-        borderLeftColor: color.accent,
+        borderLeftColor: color.primary,
         flexDirection: "column",
     },
 
@@ -125,7 +125,7 @@ const styles = StyleSheet.create({
         marginVertical: `${GAP / 2}%`,
         borderRadius: 15,
         borderWidth: width.default,
-        borderColor: color.accent,
+        borderColor: color.primary,
         alignItems: "center",
         overflow: "hidden",
     },
@@ -142,7 +142,7 @@ const styles = StyleSheet.create({
     },
 
     selectedCard: {
-        borderColor: color.highlight,
+        borderColor: color.secondary,
         borderWidth: 4,
     },
 
@@ -156,12 +156,12 @@ const styles = StyleSheet.create({
         height: 60,
         backgroundColor: color.overlay,
         borderTopWidth: width.default,
-        borderTopColor: color.accent,
+        borderTopColor: color.primary,
     },
 
     text: {
         fontSize: 18,
-        color: color.accent,
+        color: color.primary,
         fontFamily: "monospace",
         fontWeight: "bold",
     },
