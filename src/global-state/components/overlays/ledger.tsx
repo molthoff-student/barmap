@@ -5,13 +5,30 @@ import Currency from "@/src/currency";
 import Loading from "@/src/loading";
 import { AdminOverlay } from "../overlay";
 import { User } from "@/src/database/repositories/users";
-import { createStyles } from "./shared";
+import {
+    Button,
+    createStyles,
+    Seperator,
+    styles as sharedStyles,
+} from "./shared";
 import { useDatabase } from "@/src/database/provider";
 import { Transaction } from "@/src/database/repositories/transactions";
+import statics, { border, color, fonts } from "@/src/static";
+
+const LedgerHeader = () => (
+    <View style={styles.listContent}>
+        <View style={styles.listItem}>
+            <Text style={styles.label}>{"Naam"}</Text>
+            <Text style={styles.label}>{"Balans"}</Text>
+            <Text style={styles.label}>{"Kosten"}</Text>
+            <Text style={styles.label}>{"Na afschrijven"}</Text>
+        </View>
+    </View>
+);
 
 export function Ledger({ exit }: { exit: () => void }) {
     const { productList, sellingList } = useProducts();
-    const { selectedUsers, userList } = useUsers();
+    const { selectedUsers, userList, updateUsers } = useUsers();
     const { transactions } = useDatabase();
 
     const [loadRequest, setLoadRequest] = useState(false);
@@ -60,16 +77,20 @@ export function Ledger({ exit }: { exit: () => void }) {
         } catch (reason: any) {
             Alert.alert(`Failed to `);
         }
+        updateUsers();
         setLoadRequest(false);
+        exit();
     }, [filteredUsers, ledger]);
 
     const renderItem = ({ item }: { item: User }) => {
         return (
-            <View>
-                <Text>{item.name}</Text>
-                <Text>{item.balance.toString()}</Text>
-                <Text>{total.toString()}</Text>
-                <Text>{item.balance.sub(total).toString()}</Text>
+            <View style={styles.listItem}>
+                <Text style={styles.label}>{item.name}</Text>
+                <Text style={styles.label}>{item.balance.toString()}</Text>
+                <Text style={styles.label}>{total.toString()}</Text>
+                <Text style={styles.label}>
+                    {item.balance.sub(total).toString()}
+                </Text>
             </View>
         );
     };
@@ -79,6 +100,7 @@ export function Ledger({ exit }: { exit: () => void }) {
     ) : (
         <AdminOverlay exit={exit}>
             <View style={styles.list}>
+                <LedgerHeader />
                 <FlatList
                     data={filteredUsers}
                     contentContainerStyle={styles.listContent}
@@ -86,10 +108,36 @@ export function Ledger({ exit }: { exit: () => void }) {
                     numColumns={1}
                     renderItem={renderItem}
                 />
+                <Seperator />
+                <Button title="Schrijf producten af" onPress={chargePayment} />
             </View>
         </AdminOverlay>
     );
 }
 
-const overlayWidth = "60%";
-const styles = createStyles(overlayWidth);
+const overlayWidth = "70%";
+const styles = StyleSheet.create({
+    ...createStyles(overlayWidth),
+    listContent: {
+        alignItems: "center",
+        width: "100%",
+        // borderBottomColor: color.accent,
+        // borderBottomWidth: statics.width.default,
+    },
+    listItem: {
+        width: "100%",
+        flexDirection: "row",
+        alignItems: "center",
+        paddingHorizontal: 10,
+        paddingVertical: 5,
+        borderBottomColor: color.primary,
+        borderBottomWidth: statics.width.default,
+    },
+    label: {
+        flex: 1,
+        ...fonts.bold,
+        // borderBottomColor: color.accent,
+        // borderBottomWidth: statics.width.default,
+        // ...border.default,
+    },
+});
