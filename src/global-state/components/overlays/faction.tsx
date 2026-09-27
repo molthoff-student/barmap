@@ -1,9 +1,9 @@
 import { Faction } from "@/src/database/repositories/factions";
 import { useCallback, useEffect, useState } from "react";
 import {
-    Button,
     FlatList,
     StyleProp,
+    StyleSheet,
     Text,
     TextInput,
     View,
@@ -11,6 +11,7 @@ import {
 } from "react-native";
 import {
     createStyles,
+    styles as sharedStyles,
     editObjCallback,
     EditToggle,
     filterStr,
@@ -19,11 +20,13 @@ import {
     Seperator,
     tryDbStore,
     useSearchEngine,
+    Button,
 } from "./shared";
 import { useDatabase } from "@/src/database/provider";
 import { useFactions } from "../../provider";
 import { AdminOverlay } from "../overlay";
 import Loading from "@/src/loading";
+import { color } from "@/src/static";
 
 const defaultName = "Speltak";
 const defaultFaction: Faction = { id: 0, name: defaultName, active: true };
@@ -158,7 +161,6 @@ export function FactionManager({ exit }: { exit: () => void }) {
                         createNew={() => createNew(defaultFaction)}
                     />
                     <Seperator />
-
                     <FlatList
                         data={filteredProducts}
                         contentContainerStyle={styles.listContent}
@@ -166,9 +168,7 @@ export function FactionManager({ exit }: { exit: () => void }) {
                         numColumns={1}
                         renderItem={renderItem}
                     />
-
                     <Seperator />
-
                     <Button
                         title="Bewaar wijzigingen"
                         onPress={() => storeAll(allFactions)}
@@ -182,4 +182,7 @@ export function FactionManager({ exit }: { exit: () => void }) {
 }
 
 const overlayWidth = "60%";
-const styles = createStyles(overlayWidth);
+const styles = StyleSheet.create({
+    ...createStyles(overlayWidth),
+    ...sharedStyles,
+});
