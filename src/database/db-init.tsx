@@ -6,7 +6,7 @@ export const CREDIT: string = "credit";
 export const PRODUCTS: string = "products";
 export const TRANSACTIONS: string = "transactions";
 
-const INIT_FACTIONS_TBL: string = `
+const CREATE_FACTIONS_TBL: string = `
     CREATE TABLE IF NOT EXISTS ${FACTIONS} (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         name TEXT NOT NULL UNIQUE,
@@ -15,7 +15,7 @@ const INIT_FACTIONS_TBL: string = `
     );
 `;
 
-const INIT_USER_TBL: string = `
+const CREATE_USER_TBL: string = `
     CREATE TABLE IF NOT EXISTS ${USERS} (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         name TEXT NOT NULL UNIQUE,
@@ -31,7 +31,7 @@ const INIT_USER_TBL: string = `
     );
 `;
 
-const INIT_CREDIT_TABLE: string = `
+const CREATE_CREDIT_TABLE: string = `
     CREATE TABLE IF NOT EXISTS ${CREDIT} (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         user_id INTEGER NOT NULL,
@@ -44,8 +44,8 @@ const INIT_CREDIT_TABLE: string = `
     );
 `;
 
-const INIT_CREDIT_TRIGGER: string = `
-    CREATE TRIGGER IF NOT EXISTS update_user_credit
+const UPDATE_USER_TRIGGER: string = `
+    CREATE TRIGGER IF NOT EXISTS update_user_trigger
     AFTER UPDATE OF given_money ON ${USERS}
     FOR EACH ROW
     WHEN NEW.given_money != OLD.given_money
@@ -58,7 +58,20 @@ const INIT_CREDIT_TRIGGER: string = `
     END;
 `;
 
-const INIT_PRODUCT_TBL: string = `
+const INSERT_USER_TRIGGER: string = `
+    CREATE TRIGGER IF NOT EXISTS insert_user_trigger
+    AFTER INSERT ON ${USERS}
+    FOR EACH ROW
+    BEGIN
+        INSERT INTO ${CREDIT} (user_id, given_money)
+        VALUES (
+            NEW.id,
+            NEW.given_money - NEW.spent_money
+        );
+    END;
+`;
+
+const CREATE_PRODUCT_TBL: string = `
     CREATE TABLE IF NOT EXISTS ${PRODUCTS} (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         name TEXT NOT NULL UNIQUE,
@@ -68,7 +81,7 @@ const INIT_PRODUCT_TBL: string = `
     );
 `;
 
-const INIT_TRANSACTIONS_TBL = `
+const CREATE_TRANSACTIONS_TBL = `
     CREATE TABLE IF NOT EXISTS ${TRANSACTIONS} (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         user_id INTEGER NOT NULL,
@@ -87,8 +100,8 @@ const INIT_TRANSACTIONS_TBL = `
     );
 `;
 
-const INIT_TRANSACTIONS_TRIGGER: string = `
-    CREATE TRIGGER IF NOT EXISTS update_user_transaction
+const INSERT_TRANSACTIONS_TRIGGER: string = `
+    CREATE TRIGGER IF NOT EXISTS insert_transaction_trigger
     AFTER INSERT ON ${TRANSACTIONS}
     FOR EACH ROW
     BEGIN
@@ -121,16 +134,17 @@ async function runSqlAsync(
 }
 
 export async function initDatabase(db: SQLiteDatabase): Promise<void> {
-    await runSqlAsync(db, INIT_PRAGMAS, "INIT_PRAGMAS");
-    await runSqlAsync(db, INIT_FACTIONS_TBL, "INIT_FACTIONS_TBL");
-    await runSqlAsync(db, INIT_USER_TBL, "INIT_USER_TBL");
-    await runSqlAsync(db, INIT_CREDIT_TABLE, "INIT_CREDIT_TABLE");
-    await runSqlAsync(db, INIT_PRODUCT_TBL, "INIT_PRODUCT_TBL");
-    await runSqlAsync(db, INIT_TRANSACTIONS_TBL, "INIT_TRANSACTIONS_TBL");
-    await runSqlAsync(db, INIT_CREDIT_TRIGGER, "INIT_CREDIT_TRIGGER");
+    await runSqlAsync(db, INIT_PRAGMAS, "CREATE_PRAGMAS");
+    await runSqlAsync(db, CREATE_FACTIONS_TBL, "CREATE_FACTIONS_TBL");
+    await runSqlAsync(db, CREATE_USER_TBL, "CREATE_USER_TBL");
+    await runSqlAsync(db, CREATE_CREDIT_TABLE, "CREATE_CREDIT_TABLE");
+    await runSqlAsync(db, CREATE_PRODUCT_TBL, "CREATE_PRODUCT_TBL");
+    await runSqlAsync(db, CREATE_TRANSACTIONS_TBL, "CREATE_TRANSACTIONS_TBL");
+    await runSqlAsync(db, UPDATE_USER_TRIGGER, "UPDATE_USER_TRIGGER");
+    await runSqlAsync(db, INSERT_USER_TRIGGER, "INSERT_USER_TRIGGER");
     await runSqlAsync(
         db,
-        INIT_TRANSACTIONS_TRIGGER,
-        "INIT_TRANSACTIONS_TRIGGER",
+        INSERT_TRANSACTIONS_TRIGGER,
+        "INSERT_TRANSACTIONS_TRIGGER",
     );
 }
