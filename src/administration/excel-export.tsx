@@ -2,30 +2,76 @@ import * as SQLite from "expo-sqlite";
 import { File, Paths } from "expo-file-system";
 import * as LegacyFileSystem from "expo-file-system/legacy"; // SAF lives only in the legacy module
 import * as Sharing from "expo-sharing";
-import * as XLSX from "xlsx";
 import { Platform } from "react-native";
-import UserRepository from "../database/repositories/users";
+import * as XLSX from "xlsx";
+import ExcelJS from "exceljs";
+import UserRepository, { User } from "../database/repositories/users";
+import { Faction } from "../database/repositories/factions";
 
-const { StorageAccessFramework } = LegacyFileSystem;
-const androidOsMimeType =
-    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
-export async function exportDatabaseToExcel(
-    db: SQLite.SQLiteDatabase,
-): Promise<void> {
-    const base64 = await buildWorkbookBase64(db);
-    const fileName = `export_${Date.now()}.xlsx`;
+function buildFactionTable(factions: Faction[]): ExcelJS.TableProperties {
+    const rows = factions.map((faction) => ([
+        faction.id,
+        faction.name,
+        faction.active,
+    ]));
 
-    if (Platform.OS === "android") {
-        await saveViaFolderPicker(base64, fileName, androidOsMimeType);
-    } else {
-        await saveViaShareSheet(base64, fileName);
-    }
+    const columns = [
+        { name: "Id" },
+        { name: "Naam" },
+        { name: "Actief" },
+    ]
+
+    return {
+        name: "Speltakken",
+        ref: "A1",
+        headerRow: true,
+        totalsRow: false,
+        style: {
+            theme: "TableStyleDark1",
+            showRowStripes: true,
+        },
+        columns,
+        rows,
+    };
+}
+
+function buildUserTable(users: User[]): ExcelJS.TableProperties {
+    const rows = users.map((user) => ([
+            user.id,
+            user.name,
+            user.given_money.value * 0.01,
+            user.spent_money.value * 0.01,
+            user.balance.value * 0.01,
+            user.faction,
+        ]));
+    
+    const columns = [
+        { name: "Id" },
+        { name: "Naam" },
+        { name: "Inleg" },
+        { name: "Uitgaven" },
+        { name: "Balans" },
+        { name: "Speltak" },
+    ]
+
+    return {
+        name: "Gebruikers",
+        ref: "A1",
+        headerRow: true,
+        totalsRow: false,
+        style: {
+            theme: "TableStyleDark1",
+            showRowStripes: true,
+        },
+        columns,
+        rows,
+    };
 }
 
 async function buildWorkbookBase64(db: SQLite.SQLiteDatabase): Promise<string> {
     const tableNames = await db
         .getAllAsync<{ name: string }>(
-            `SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%'`,
+            `SELECT name FROM sqlite_master WHERE type = "table" AND name NOT LIKE "sqlite_%"`,
         )
         .then((tables) => tables.map((row) => row.name))
         .catch((reason) => {
@@ -64,6 +110,23 @@ async function buildWorkbookBase64(db: SQLite.SQLiteDatabase): Promise<string> {
     return XLSX.write(workbook, { type: "base64", bookType: "xlsx" }) as string;
 }
 
+
+const { StorageAccessFramework } = LegacyFileSystem;
+const androidOsMimeType =
+    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+export async function exportDatabaseToExcel(
+    db: SQLite.SQLiteDatabase,
+): Promise<void> {
+    const base64 = await buildWorkbookBase64(db);
+    const fileName = `export_${Date.now()}.xlsx`;
+
+    if (Platform.OS === "android") {
+        await saveViaFolderPicker(base64, fileName, androidOsMimeType);
+    } else {
+        await saveViaShareSheet(base64, fileName);
+    }
+}
+
 async function saveViaFolderPicker(
     base64: string,
     fileName: string,
@@ -72,7 +135,7 @@ async function saveViaFolderPicker(
     const permissions =
         await StorageAccessFramework.requestDirectoryPermissionsAsync();
     if (!permissions.granted) {
-        // throw new Error('exportDatabaseToExcel: user did not grant folder access.');
+        // throw new Error("exportDatabaseToExcel: user did not grant folder access.");
         return;
     }
 
