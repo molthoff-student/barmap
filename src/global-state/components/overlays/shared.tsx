@@ -215,9 +215,50 @@ export const ListHeader = ({
 
 export const Seperator = () => <View style={styles.seperator} />;
 
+export function Button({
+    title,
+    onPress,
+    disabled = false,
+    // buttonStyle,
+    // textStyle,
+}: {
+    title?: string;
+    onPress?: (() => void) | (() => Promise<void>);
+    disabled?: boolean;
+    // buttonStyle?:
+    //     | StyleProp<ViewStyle>
+    //     | ((state: PressableStateCallbackType) => StyleProp<ViewStyle>);
+    // textStyle?: StyleProp<TextStyle>;
+}) {
+    return (
+        <Pressable
+            onPress={onPress}
+            disabled={disabled}
+            accessibilityRole="button"
+            accessibilityState={{ disabled }}
+            style={({ pressed }) => [
+                styles.button,
+                pressed && styles.buttonPressed,
+                disabled && styles.buttonDisabled,
+            ]}
+        >
+            <Text style={styles.buttonText}>{title}</Text>
+        </Pressable>
+    );
+}
+
 const { color, border, fonts } = statics;
 
-const styles = StyleSheet.create({
+export const styles = StyleSheet.create({
+    listContent: {
+        alignItems: "center",
+        gap: 12,
+        padding: 20,
+    },
+    listItem: {
+        width: "100%",
+        ...border.default,
+    },
     editor: {
         width: "100%",
         flexDirection: "row",
@@ -226,7 +267,6 @@ const styles = StyleSheet.create({
     label: {
         width: "30%",
         marginBottom: 10,
-        color: color.accent,
         ...fonts.default,
     },
     input: {
@@ -235,7 +275,6 @@ const styles = StyleSheet.create({
         height: 45,
         marginBottom: 10,
         paddingHorizontal: 10,
-        color: color.accent,
         ...fonts.default,
         ...border.input,
     },
@@ -250,8 +289,11 @@ const styles = StyleSheet.create({
     searchInput: {
         flex: 1,
         height: 45,
+        // alignItems: "center",
+        // justifyContent: "center",
+        textAlignVertical: "center",
+        paddingVertical: 0,
         paddingHorizontal: 10,
-        color: color.accent,
         ...fonts.default,
         ...border.input,
     },
@@ -260,17 +302,28 @@ const styles = StyleSheet.create({
         paddingHorizontal: 10,
         alignItems: "center",
         justifyContent: "center",
-        borderRadius: 8,
-        ...border.default,
+        ...border.input,
     },
     button: {
-        flex: 1,
-        paddingHorizontal: 10,
-        margin: 5,
+        minHeight: 48,
+        minWidth: 64,
+        paddingHorizontal: 16,
         alignItems: "center",
         justifyContent: "center",
-        borderRadius: 8,
-        ...border.default,
+        // borderRadius: 2,
+        backgroundColor: color.secondary,
+        color: color.secondary,
+        elevation: 2,
+    },
+    buttonPressed: {
+        opacity: 0.6,
+    },
+    buttonDisabled: {
+        opacity: 0.4,
+    },
+    buttonText: {
+        ...fonts.bold,
+        color: color.default,
     },
     pickerWrapper: {
         width: "60%",
@@ -279,12 +332,10 @@ const styles = StyleSheet.create({
         marginBottom: 10,
         justifyContent: "center",
         overflow: "hidden",
-        backgroundColor: color.default,
         ...border.input,
     },
     picker: {
         width: "100%",
-        color: color.accent,
         ...fonts.bold,
     },
     pickerItem: fonts.default,
@@ -296,7 +347,7 @@ const styles = StyleSheet.create({
     },
     seperator: {
         width: "100%",
-        borderBottomColor: color.accent,
+        borderBottomColor: color.primary,
         borderBottomWidth: statics.width.default,
     },
 });
@@ -318,15 +369,5 @@ export function createStyles(overlayWidth: `${number}%`) {
             height: "100%",
             ...border.default,
         },
-        listContent: {
-            alignItems: "center",
-            gap: 12,
-            padding: 20,
-        },
-        listItem: {
-            width: "100%",
-            ...border.default,
-        },
-        ...styles,
     });
 }
