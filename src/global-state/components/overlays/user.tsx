@@ -1,7 +1,7 @@
 import {
-    Button,
     FlatList,
     StyleProp,
+    StyleSheet,
     Text,
     TextInput,
     View,
@@ -21,11 +21,13 @@ import {
     sanitizeText,
     Seperator,
     createStyles,
+    styles as sharedStyles,
     tryDbStore,
     filterStr,
     ListHeader,
     EditCurrency,
     useSearchEngine,
+    Button,
 } from "./shared";
 import Loading from "@/src/loading";
 
@@ -55,7 +57,7 @@ function ConfigureUser({
     style?: StyleProp<ViewStyle>;
     store?: (user: User) => Promise<void | number>;
 }) {
-    const { factionList, factionIdx } = useFactions();
+    const { factionList } = useFactions();
     const editUser = editObjCallback(user, setUser);
 
     const onChangeText = useCallback(
@@ -69,6 +71,22 @@ function ConfigureUser({
     const editBalance = useCallback(
         (balance: Currency) => {
             editUser((next) => (next.balance = balance));
+            // editUser((next) => {
+            //     const diff = balance.sub(next.balance);
+            //     const more = diff.value > 0;
+            //     if (more) {
+            //         next.given_money = next.given_money.add(diff);
+            //         next.balance = balance;
+            //     }
+            //     const less = diff.value < 0;
+            //     if (less) {
+            //         const addition = diff.mul(-1);
+            //         next.spent_money = next.spent_money.add(addition);
+            //         next.balance = balance;
+            //     }
+            //     if (__DEV__)
+            //         console.log(`next: ${JSON.stringify(next, undefined, 4)}`);
+            // });
         },
         [editUser],
     );
@@ -113,7 +131,7 @@ function ConfigureUser({
                     selectedValue={user.faction}
                     onValueChange={(name) => editFaction(name)}
                 />
-                {store && <Button title="Bewaar" onPress={() => {}} />}
+                {store && <Button title="Bewaar" onPress={() => store(user)} />}
             </View>
         </View>
     );
@@ -250,4 +268,7 @@ export function UserManager({ exit }: { exit: () => void }) {
 }
 
 const overlayWidth = "60%";
-const styles = createStyles(overlayWidth);
+const styles = StyleSheet.create({
+    ...createStyles(overlayWidth),
+    ...sharedStyles,
+});
