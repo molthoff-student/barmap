@@ -1,23 +1,31 @@
 import { Pressable, StyleSheet, Text, View } from "react-native";
-import { ReactNode, useCallback, useMemo, useState } from "react";
-import { useProducts, useUsers } from "../provider";
+import { useCallback, useMemo, useState } from "react";
+import { useFactions, useProducts, useUsers } from "../provider";
 import Currency from "../../currency";
 import statics from "@/src/static";
 import { COLUMNS } from "./userlist";
-import { Overlay } from "./overlay";
 import { ProductManager } from "./overlays/product";
 import { UserManager } from "./overlays/user";
 import { FactionManager } from "./overlays/faction";
 import { Ledger } from "./overlays/ledger";
 
-type UtilityButtonData = {
-    label: string;
-    component?: ReactNode;
-};
-
 const { color, border } = statics;
 
 const LEFT_PANEL_PERCENT = (100 / 6) * COLUMNS;
+
+const UtilityButtonList = [
+    { label: "Beheer speltakken", component: FactionManager },
+    { label: "Beheer gebruikers", component: UserManager },
+    { label: "Beheer producten", component: ProductManager },
+    { label: "Schrijf producten af", component: Ledger },
+];
+
+enum Overlay {
+    faction,
+    user,
+    product,
+    ledger,
+}
 
 function UtilityButton({
     label,
@@ -45,23 +53,11 @@ function UtilityButton({
 
 export function Utilitybar() {
     const { productList, sellingList } = useProducts();
+    const { factionList } = useFactions();
     const { selectedUsers } = useUsers();
     const [overlay, setOverlay] = useState<number | null>(null);
 
     const exit = useCallback(() => setOverlay(null), []);
-
-    const UtilityButtonList: UtilityButtonData[] = [
-        {
-            label: "Beheer speltakken",
-            component: <FactionManager exit={exit} />,
-        },
-        { label: "Beheer gebruikers", component: <UserManager exit={exit} /> },
-        {
-            label: "Beheer producten",
-            component: <ProductManager exit={exit} />,
-        },
-        { label: "Schrijf producten af", component: <Ledger exit={exit} /> },
-    ];
 
     const total = useMemo(() => {
         let total = new Currency();
@@ -76,18 +72,28 @@ export function Utilitybar() {
         return total;
     }, [sellingList, productList]);
 
-    if (__DEV__) console.log(`total: ${total}`);
-    if (__DEV__) console.log(`overlay: ${overlay}`);
+    const disableButton = useCallback((index: Overlay): boolean => {
+        switch(index) {
+            case Overlay.user:
+                return factionList.length === 0;
+            case Overlay.ledger:
+                return sellingList.size <= 0 || selectedUsers.size <= 0;
+            default: 
+                return false;
+        }
+    }, [factionList, sellingList, selectedUsers]);
+
+    const SelectedComponent =
+        typeof overlay === "number"
+            ? UtilityButtonList[overlay].component
+            : null;
 
     return (
         <>
             <View style={styles.container}>
                 <View style={styles.buttonGroup}>
                     {UtilityButtonList.map(({ label }, index) => {
-                        const disabled =
-                            index === UtilityButtonList.length - 1 &&
-                            (sellingList.size <= 0 || selectedUsers.size <= 0);
-
+                        const disabled = disableButton(index);
                         return (
                             <UtilityButton
                                 key={index}
@@ -106,8 +112,9 @@ export function Utilitybar() {
                     </Text>
                 </View>
             </View>
-            {typeof overlay === "number" &&
-                UtilityButtonList[overlay].component}
+            {SelectedComponent && (
+                <SelectedComponent exit={exit} />
+            )}
         </>
     );
 }
