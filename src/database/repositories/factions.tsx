@@ -100,7 +100,7 @@ export default class FactionRepository {
             .executeAsync<SQLFaction>()
             .then((result) => result.getAllAsync())
             .catch((reason) => {
-                throw new Error(`getAllFactions: ${reason}`);
+                throw new Error(`getAllFactions: ${reason.message}`);
             });
 
         return factions.map((faction) => sqlToJs(faction)!);
@@ -110,7 +110,7 @@ export default class FactionRepository {
             .executeAsync<SQLFaction>(name)
             .then((result) => result.getFirstAsync())
             .catch((reason) => {
-                throw new Error(`getUserByName: ${reason}`);
+                throw new Error(`getUserByName: ${reason.message}`);
             });
 
         return sqlToJs(user);
@@ -140,7 +140,7 @@ export default class FactionRepository {
     };
     addFaction = async (faction: Faction): Promise<number> => {
         const isExist = await this.getFactionByName(faction.name);
-        if (isExist) throw new Error("Speltak bestaat al");
+        if (isExist) throw new Error(`Speltak '${faction.name}' bestaat al`);
 
         const id = await this.queries.addFaction
             .executeAsync<SQLFaction>(

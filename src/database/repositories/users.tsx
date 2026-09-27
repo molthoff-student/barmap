@@ -27,8 +27,10 @@ const EDIT_USER = `
     UPDATE ${REPO}
     SET
         name = ?,
-        given_money = ?,
-        spent_money = ?,
+        given_money = given_money
+            + MAX(0, ? - (given_money - spent_money)),
+        spent_money = spent_money
+            + MAX(0, (given_money - spent_money) - ?),
         faction = ?
     WHERE id = ?;
 `;
@@ -63,7 +65,7 @@ type SQLUser = {
     faction: string;
 };
 
-const sqlToJS = (user: SQLUser | null): User | null => {
+export const sqlToUser = (user: SQLUser | null): User | null => {
     if (!user) return null;
     return {
         id: user.id,
@@ -116,49 +118,54 @@ export default class UserRepository {
             .executeAsync<SQLUser>(name)
             .then((result) => result.getFirstAsync())
             .catch((reason) => {
-                throw new Error(`getUserByName: ${reason}`);
+                throw new Error(`getUserByName: ${reason.message}`);
             });
 
         if (__DEV__)
             console.log(`getUserByName: ${JSON.stringify(user, replacer)}`);
 
-        return sqlToJS(user);
+        return sqlToUser(user);
     };
     getUsersByFaction = async (faction: string): Promise<User[] | null> => {
         const users = await this.queries.userByFaction
             .executeAsync<SQLUser>(faction)
             .then((result) => result.getAllAsync())
             .catch((reason) => {
-                throw new Error(`getUsersByFaction: ${reason}`);
+                throw new Error(`getUsersByFaction: ${reason.message}`);
             });
 
-        return users.map((user) => sqlToJS(user)!);
+        return users.map((user) => sqlToUser(user)!);
     };
     getAllUsers = async (): Promise<User[] | null> => {
         const users = await this.queries.allUsers
             .executeAsync<SQLUser>()
             .then((result) => result.getAllAsync())
             .catch((reason) => {
-                throw new Error(`getAllUsers: ${reason}`);
+                throw new Error(`getAllUsers: ${reason.message}`);
             });
 
-        return users.map((user) => sqlToJS(user)!);
+        return users.map((user) => sqlToUser(user)!);
     };
 
     editUser = async (user: User): Promise<number> => {
+        if (__DEV__)
+            console.log(`editing user: ${JSON.stringify(user, replacer, 4)}`);
+
         const isExist = await this.getUserByName(user.name);
         if (isExist && isExist.id !== user.id)
             throw new Error("Gebruiker met deze naam bestaat al");
 
+        if (__DEV__) console.log(`isExist: ${isExist}`);
         const id = await this.queries.editUser
             .executeAsync<SQLUser>(
                 user.name.trimEnd(),
-                user.given_money.value,
-                user.spent_money.value,
+                user.balance.value,
+                user.balance.value,
                 user.faction,
                 user.id,
             )
             .then((res) => {
+                if (__DEV__) console.log(`res: ${JSON.stringify(res)}`);
                 return res.changes === 0 ? null : user.id;
             });
 
@@ -170,7 +177,7 @@ export default class UserRepository {
             console.log("adding user:", JSON.stringify(user, replacer));
 
         const isExist = await this.getUserByName(user.name);
-        if (isExist) throw new Error("Gebruiker bestaat al");
+        if (isExist) throw new Error(`Gebruiker ${user.name} bestaat al`);
 
         const id = await this.queries.addUser
             .executeAsync<SQLUser>(

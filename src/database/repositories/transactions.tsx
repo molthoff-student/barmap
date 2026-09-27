@@ -21,19 +21,31 @@ const INSERT_TRANSACTION = `
     VALUES (?, ?, ?, ?);
 `;
 
-const GET_MOST_BOUGHT_BY_USER: string = `
-    SELECT
-        t.user_id,
-        t.product_id,
-        p.name AS product_name,
-        SUM(t.amount_bought) AS total_bought,
-        SUM(t.amount_spent) AS total_spent
-    FROM ${REPO} t
-    JOIN products p ON p.id = t.product_id
-    WHERE t.user_id = ?
-    GROUP BY t.user_id, t.product_id, p.name
-    ORDER BY total_bought DESC
-    LIMIT 1;
+const GET_MOST_BOUGHT_BY_USERS: string = `
+    WITH ranked_transactions AS (
+        SELECT
+            transactions.user_id AS user_id,
+            users.name AS user_name,
+            transactions.product_id AS product_id,
+            products.name AS product_name,
+            SUM(transactions.amount_bought) AS total_bought,
+            SUM(transactions.amount_spent) AS total_spent,
+            ROW_NUMBER() OVER (
+                PARTITION BY transactions.user_id
+                ORDER BY SUM(transactions.amount_bought) DESC
+            ) AS purchase_rank
+        FROM ${REPO} transactions
+        JOIN products ON products.id = transactions.product_id
+        JOIN users ON users.id = transactions.user_id
+        GROUP BY
+            transactions.user_id,
+            users.name,
+            transactions.product_id,
+            products.name
+    )
+    SELECT user_name, product_name, total_bought, total_spent
+    FROM ranked_transactions
+    WHERE purchase_rank = 1;
 `;
 
 type SQLTransaction = {
@@ -55,16 +67,14 @@ export type Transaction = {
 };
 
 type SQLTransactionStat = {
-    user_id: number;
-    product_id: number;
+    user_name: string;
     product_name: string;
     total_bought: number;
     total_spent: number;
 };
 
 export type TransactionStat = {
-    user_id: number;
-    product_id: number;
+    user_name: string;
     product_name: string;
     total_bought: number;
     total_spent: Currency;
@@ -87,8 +97,7 @@ function sqlToTransactionStat(
 ): TransactionStat | null {
     if (!sql) return null;
     return {
-        user_id: sql.user_id,
-        product_id: sql.product_id,
+        user_name: sql.user_name,
         product_name: sql.product_name,
         total_bought: sql.total_bought,
         total_spent: new Currency(sql.total_spent),
@@ -99,7 +108,7 @@ type Queries = {
     transactionByUser: SQLiteStatement;
     insertTransaction: SQLiteStatement;
     // updateUserSpent: SQLiteStatement;
-    getMostBoughtByUser: SQLiteStatement;
+    getMostBoughtByUsers: SQLiteStatement;
 };
 
 export default class TransactionRepository {
@@ -117,12 +126,12 @@ export default class TransactionRepository {
             transactionByUser,
             insertTransaction,
             // updateUserSpent,
-            getMostBoughtByUser,
+            getMostBoughtByUsers,
         ] = await Promise.all([
             compileSQL(db, GET_TRANSACTIONS_BY_USER),
             compileSQL(db, INSERT_TRANSACTION),
             // compileSQL(db, UPDATE_USER_SPENT),
-            compileSQL(db, GET_MOST_BOUGHT_BY_USER),
+            compileSQL(db, GET_MOST_BOUGHT_BY_USERS),
         ]);
 
         if (__DEV__) console.log(`TransactionRepository queries compiled.`);
@@ -131,7 +140,7 @@ export default class TransactionRepository {
             transactionByUser,
             insertTransaction,
             // updateUserSpent,
-            getMostBoughtByUser,
+            getMostBoughtByUsers,
         };
 
         if (__DEV__)
@@ -147,7 +156,7 @@ export default class TransactionRepository {
             .executeAsync<SQLTransaction>(name)
             .then((result) => result.getAllAsync())
             .catch((reason) => {
-                throw new Error(`getProductByName: ${reason}`);
+                throw new Error(`getProductByName: ${reason.message}`);
             });
 
         if (__DEV__)
@@ -174,21 +183,19 @@ export default class TransactionRepository {
         if (id) return id;
         throw new Error(`Transaction was not added`);
     };
-    getMostBoughtByUser = async (
-        userId: number,
-    ): Promise<TransactionStat | null> => {
-        try {
-            const stat = await this.queries.getMostBoughtByUser
-                .executeAsync<SQLTransactionStat>(userId)
-                .then((result) => result.getFirstAsync())
-                .catch((reason) => {
-                    throw new Error(`getMostBoughtByUser query: ${reason}`);
-                });
 
-            // if (__DEV__) console.log(`getMostBoughtByUser: ${JSON.stringify(stat)}`);
-            return sqlToTransactionStat(stat);
-        } catch (reason) {
-            throw new Error(`getMostBoughtByUser: ${reason}`);
-        }
+    getMostBoughtByUsers = async (): Promise<TransactionStat[]> => {
+        const stats = await this.queries.getMostBoughtByUsers
+            .executeAsync<SQLTransactionStat>()
+            .then((result) => result.getAllAsync())
+            .catch((reason) => {
+                throw new Error(
+                    `getMostBoughtByUsers query: ${reason.message}`,
+                );
+            });
+
+        // if (__DEV__) console.log(`getMostBoughtByUsers: ${JSON.stringify(stats)}`);
+
+        return stats.map((value) => sqlToTransactionStat(value)!);
     };
 }

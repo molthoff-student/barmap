@@ -63,7 +63,7 @@ export type Product = {
     active: boolean;
 };
 
-function sqlToProduct(sql: SQLProduct | null): Product | null {
+export function sqlToProduct(sql: SQLProduct | null): Product | null {
     if (!sql) return null;
     return {
         id: sql.id,
@@ -108,7 +108,7 @@ export default class ProductRepository {
             .executeAsync<SQLProduct>(name)
             .then((result) => result.getFirstAsync())
             .catch((reason) => {
-                throw new Error(`getProductByName: ${reason}`);
+                throw new Error(`getProductByName: ${reason.message}`);
             });
 
         if (__DEV__) console.log(JSON.stringify(product));
@@ -121,7 +121,7 @@ export default class ProductRepository {
             .executeAsync<SQLProduct>()
             .then((result) => result.getAllAsync())
             .catch((reason) => {
-                throw new Error(`getProductByActivity: ${reason}`);
+                throw new Error(`getProductByActivity: ${reason.message}`);
             });
 
         // if (__DEV__) console.log(JSON.stringify(products));
@@ -136,7 +136,7 @@ export default class ProductRepository {
             .executeAsync<SQLProduct>(value)
             .then((result) => result.getAllAsync())
             .catch((reason) => {
-                throw new Error(`getProductByActivity: ${reason}`);
+                throw new Error(`getProductByActivity: ${reason.message}`);
             });
 
         if (__DEV__) console.log(JSON.stringify(products));
