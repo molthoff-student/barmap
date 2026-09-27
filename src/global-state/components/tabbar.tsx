@@ -33,7 +33,12 @@ export default function Tabbar({ open }: { open?: () => void }) {
                                     index === 0 && styles.firstTab,
                                 ]}
                             >
-                                <Text style={styles.tabText}>
+                                <Text
+                                    style={[
+                                        styles.tabText,
+                                        selected && styles.selectedTabText,
+                                    ]}
+                                >
                                     {faction.name}
                                 </Text>
                             </Pressable>
@@ -50,7 +55,7 @@ const styles = StyleSheet.create({
         height: TAB_HEIGHT,
         flexDirection: "row",
         borderBottomWidth: 3,
-        borderBottomColor: color.accent,
+        borderBottomColor: color.primary,
         backgroundColor: color.default,
     },
 
@@ -62,14 +67,14 @@ const styles = StyleSheet.create({
     tab: {
         width: 170,
         height: TAB_HEIGHT,
-        backgroundColor: color.lowlight,
+        // backgroundColor: color.lowlight,
         borderTopLeftRadius: 20,
         borderTopRightRadius: 20,
         justifyContent: "center",
         alignItems: "center",
         marginRight: 2,
         borderWidth: width.default,
-        borderColor: color.accent,
+        borderColor: color.primary,
     },
 
     firstTab: {
@@ -77,13 +82,18 @@ const styles = StyleSheet.create({
     },
 
     selectedTab: {
-        backgroundColor: color.highlight,
+        backgroundColor: color.secondary,
+        // borderColor: color.secondary,
+    },
+
+    selectedTabText: {
+        color: color.accent,
     },
 
     tabText: {
         fontFamily: "monospace",
         fontWeight: "700",
         fontSize: 18,
-        color: color.accent,
+        color: color.primary,
     },
 });
