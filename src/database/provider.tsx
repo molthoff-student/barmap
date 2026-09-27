@@ -4,10 +4,12 @@ import UserRepository from './repositories/users';
 import ProductRepository from './repositories/products';
 import FactionRepository from './repositories/factions';
 import Loading from '../loading';
+import TransactionRepository from './repositories/transactions';
 
 type DatabaseCtx = {
     factions: FactionRepository,
     products: ProductRepository,
+    transactions: TransactionRepository,
     users: UserRepository,
     admin: boolean,
     database: DataBase,
@@ -33,6 +35,7 @@ export function DatabaseProvider({ children }: { children: React.ReactNode }) {
         database: db,
         factions: db.factions,
         products: db.products,
+        transactions: db.transactions,
         users: db.users,
         admin: admin,
     }

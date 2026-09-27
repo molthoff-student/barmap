@@ -1,8 +1,8 @@
 import { FlatList, Pressable, StyleSheet, Text, View } from "react-native";
 import { useUsers } from "../provider";
-import React, { useCallback, useMemo, useState } from "react";
+import { useCallback, useMemo, useState, memo } from "react";
 import { UserIcon } from "../../administration/icons";
-import { EditUser } from "./overlay";
+import { EditUser } from "./overlays/user";
 import statics from "@/src/static";
 import { User } from "@/src/database/repositories/users";
 
@@ -10,108 +10,107 @@ export const COLUMNS = 4;
 const GAP = 1.5;
 const CARD_WIDTH = 100 / COLUMNS - GAP;
 
-const UserCard = React.memo(function UserCard({ item, selected, len, toggleUser, setEditUser }: { 
-    item: User,
-    selected: boolean,
-    len: number,
-    toggleUser: (id: number) => void,
-    setEditUser: (value: React.SetStateAction<User | null>) => void,
+const UserCard = memo(function UserCard({
+    item,
+    selected,
+    len,
+    toggleUser,
+    setEditUser,
+}: {
+    item: User;
+    selected: boolean;
+    len: number;
+    toggleUser: (id: number) => void;
+    setEditUser: (value: React.SetStateAction<User | null>) => void;
 }) {
-        return (
-            <Pressable
-                onPress={() => toggleUser(item.id)}
-                onLongPress={() => setEditUser(item)}
-                delayLongPress={500}
-                style={[
-                    styles.card,
-                    selected && styles.selectedCard,
-                ]}
-            >
-                <UserIcon id={item.id} />
-                <View style={styles.userDescription}>
-                    <Text style={styles.text}>
-                        {item.username.slice(0, 16)}
-                    </Text>
-                    <Text style={styles.text}>
-                        {item.balance.toString(len)}
-                    </Text>
-                </View>
-            </Pressable>
-        );
-    }
-);
+    return (
+        <Pressable
+            onPress={() => toggleUser(item.id)}
+            onLongPress={() => setEditUser(item)}
+            delayLongPress={500}
+            style={[styles.card, selected && styles.selectedCard]}
+        >
+            <UserIcon id={item.id} />
+            <View style={styles.userDescription}>
+                <Text style={styles.text}>{item.name.slice(0, 16)}</Text>
+                <Text style={styles.text}>{item.balance.toString(len)}</Text>
+            </View>
+        </Pressable>
+    );
+});
 
 export default function UserList() {
     const { userList, selectedUsers, toggleUser } = useUsers();
     const [editUser, setEditUser] = useState<User | null>(null);
 
-    const len = useMemo(
-        () => {
-            const highest = userList.reduce(
-                (highest, item) => Math.max(highest, item.balance.value),
-                0
-            );
+    const len = useMemo(() => {
+        const highest = userList.reduce(
+            (highest, item) => Math.max(highest, item.balance.value),
+            0,
+        );
 
-            const len = Math.max(highest.toString().length - 2, 2);
+        const len = Math.max(highest.toString().length - 2, 2);
 
-            if (__DEV__) console.log(`highest balance: €${(highest / 100).toFixed(2)}`);
-            if (__DEV__) console.log(`len: ${len}`);
+        if (__DEV__)
+            console.log(`highest balance: €${(highest / 100).toFixed(2)}`);
+        if (__DEV__) console.log(`len: ${len}`);
 
-            return len;
-        },
-        [userList]
-    );
+        return len;
+    }, [userList]);
 
     if (__DEV__) {
-        const list: string[] = [...selectedUsers.entries()].map(user => {
-            return userList.find(value => value.id == user[0])!.username;
+        const list: string[] = [...selectedUsers.entries()].map((user) => {
+            return userList.find((value) => value.id == user[0])!.name;
         });
 
         console.log(`Selected users: ${JSON.stringify(list)}`);
     }
 
-    const renderItem = useCallback(({ item }: { item: User }) => (
-        <UserCard
-            item={item}
-            selected={selectedUsers.has(item.id)}
-            len={len}
-            toggleUser={toggleUser}
-            setEditUser={setEditUser}
-        />
-    ), [selectedUsers, len, toggleUser]);
+    const renderItem = useCallback(
+        ({ item }: { item: User }) => (
+            <UserCard
+                item={item}
+                selected={selectedUsers.has(item.id)}
+                len={len}
+                toggleUser={toggleUser}
+                setEditUser={setEditUser}
+            />
+        ),
+        [selectedUsers, len, toggleUser],
+    );
 
     return (
         <View style={styles.container}>
             <FlatList
                 data={userList}
                 numColumns={COLUMNS}
-                keyExtractor={item => item.id.toString()}
+                keyExtractor={(item) => item.id.toString()}
                 contentContainerStyle={styles.listContent}
                 renderItem={renderItem}
-                style={{ height: '85%' }}
+                style={{ height: "85%" }}
             />
-            {editUser &&
+            {editUser && (
                 <EditUser
                     user={editUser}
+                    setUser={setEditUser}
                     exit={() => setEditUser(null)}
                 />
-            }
+            )}
         </View>
     );
 }
 
-const { color, border } = statics;
-const { width } = border;
+const { color, border, width } = statics;
 
 const styles = StyleSheet.create({
     container: {
         width: `${(100 / 6) * COLUMNS}%`,
-        height: '100%',
+        height: "100%",
         borderRightWidth: width.section,
-        borderRightColor: color.accent,
+        borderRightColor: color.primary,
         borderLeftWidth: width.section,
-        borderLeftColor: color.accent,
-        flexDirection: 'column',
+        borderLeftColor: color.primary,
+        flexDirection: "column",
     },
 
     listContent: {
@@ -126,9 +125,9 @@ const styles = StyleSheet.create({
         marginVertical: `${GAP / 2}%`,
         borderRadius: 15,
         borderWidth: width.default,
-        borderColor: color.accent,
-        alignItems: 'center',
-        overflow: 'hidden',
+        borderColor: color.primary,
+        alignItems: "center",
+        overflow: "hidden",
     },
 
     image: {
@@ -138,32 +137,32 @@ const styles = StyleSheet.create({
         left: 0,
         bottom: 0,
         right: 0,
-        position: 'absolute',
-        resizeMode: 'cover',
+        position: "absolute",
+        resizeMode: "cover",
     },
 
     selectedCard: {
-        borderColor: color.highlight,
+        borderColor: color.secondary,
         borderWidth: 4,
     },
 
     userDescription: {
-        position: 'absolute',
+        position: "absolute",
         left: 0,
         right: 0,
         bottom: 0,
-        alignItems: 'center',
+        alignItems: "center",
         // paddingVertical: 8,
         height: 60,
         backgroundColor: color.overlay,
         borderTopWidth: width.default,
-        borderTopColor: color.accent,
+        borderTopColor: color.primary,
     },
 
     text: {
         fontSize: 18,
-        color: color.accent,
+        color: color.primary,
         fontFamily: "monospace",
-        fontWeight: 'bold',
+        fontWeight: "bold",
     },
 });

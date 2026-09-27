@@ -1,64 +1,27 @@
-import {
-  View,
-  Text,
-  Pressable,
-  StyleSheet,
-  ScrollView,
-  GestureResponderEvent,
-} from 'react-native';
+import { View, Text, Pressable, StyleSheet, ScrollView } from "react-native";
 
-import { useFactions } from '../provider';
-import { exportDatabaseToExcel } from '@/src/administration/excel-export';
-import { useDatabase } from '@/src/database/provider';
-import statics from '@/src/static';
-import { useCallback, useState } from 'react';
-import { Overlay } from './overlay';
+import { useFactions } from "../provider";
+import statics from "@/src/static";
+import { Burger, TAB_HEIGHT } from "@/src/administration/records";
+import { useMemo } from "react";
 
-const { color, border } = statics;
-const { width } = border;
+const { color, border, width } = statics;
 
-function Burger({ onPress }: {
-    onPress?: ((event: GestureResponderEvent) => void) | null | undefined
-}) {
-    // Who needs image assets lmao
-    return (
-        <Pressable
-            style={styles.menuButton}
-            onPress={onPress}
-        >
-            <View style={styles.menuLine} />
-            <View style={styles.menuLine} />
-            <View style={styles.menuLine} />
-        </Pressable>
-    );
-}
-
-function Statistics({ exit }: {
-    exit: () => void,
-}) {
-
-    return (
-        <Overlay style={styles.overlay}>
-
-        </Overlay>
-    );
-}
-
-export default function Tabbar() {
+export default function Tabbar({ open }: { open?: () => void }) {
     const { factionList, factionIdx, setFactionIdx } = useFactions();
-    const [overlay, setOverlay] = useState(false);
-    const exit = useCallback(() => setOverlay(false), []);
-
+    const factions = useMemo(() => {
+        return factionList.filter((faction) => faction.active);
+    }, [factionList]);
     return (
         <>
             <View style={styles.tabsContainer}>
-                <Burger onPress={() => setOverlay(true)} />
+                <Burger onPress={open} />
                 <ScrollView
                     horizontal={true}
                     showsHorizontalScrollIndicator={false}
                     contentContainerStyle={styles.tabs}
-                >   
-                    {factionList.map((faction, index) => {
+                >
+                    {factions.map((faction, index) => {
                         const selected = index === factionIdx;
                         return (
                             <Pressable
@@ -70,62 +33,48 @@ export default function Tabbar() {
                                     index === 0 && styles.firstTab,
                                 ]}
                             >
-                                <Text style={styles.tabText}>
-                                    {faction}
+                                <Text
+                                    style={[
+                                        styles.tabText,
+                                        selected && styles.selectedTabText,
+                                    ]}
+                                >
+                                    {faction.name}
                                 </Text>
                             </Pressable>
                         );
                     })}
                 </ScrollView>
             </View>
-            {overlay && <Statistics exit={exit} />}
         </>
     );
 }
 
-const TAB_HEIGHT = 40;
-
 const styles = StyleSheet.create({
     tabsContainer: {
         height: TAB_HEIGHT,
-        flexDirection: 'row',
+        flexDirection: "row",
         borderBottomWidth: 3,
-        borderBottomColor: color.accent,
+        borderBottomColor: color.primary,
         backgroundColor: color.default,
-    },
-
-    menuButton: {
-        width: 40,
-        height: TAB_HEIGHT,
-        justifyContent: 'center',
-        alignItems: 'center',
-        borderWidth: width.section,
-        borderColor: color.accent,
-    },
-
-    menuLine: {
-        width: 27,
-        height: 3,
-        backgroundColor: color.accent,
-        marginVertical: 2,
     },
 
     tabs: {
         flexGrow: 1,
-        flexDirection: 'row',
+        flexDirection: "row",
     },
 
     tab: {
         width: 170,
         height: TAB_HEIGHT,
-        backgroundColor: color.lowlight,
+        // backgroundColor: color.lowlight,
         borderTopLeftRadius: 20,
         borderTopRightRadius: 20,
-        justifyContent: 'center',
-        alignItems: 'center',
+        justifyContent: "center",
+        alignItems: "center",
         marginRight: 2,
         borderWidth: width.default,
-        borderColor: color.accent,
+        borderColor: color.primary,
     },
 
     firstTab: {
@@ -133,17 +82,18 @@ const styles = StyleSheet.create({
     },
 
     selectedTab: {
-        backgroundColor: color.highlight,
+        backgroundColor: color.secondary,
+        // borderColor: color.secondary,
+    },
+
+    selectedTabText: {
+        color: color.accent,
     },
 
     tabText: {
         fontFamily: "monospace",
-        fontWeight: '700',
+        fontWeight: "700",
         fontSize: 18,
-        color: color.accent,
+        color: color.primary,
     },
-
-    overlay: {
-        backgroundColor: color.default,
-    }
 });

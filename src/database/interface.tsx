@@ -1,51 +1,21 @@
-import * as SQLite from 'expo-sqlite';
-import Currency from '../currency';
-import UserRepository, { User } from './repositories/users';
-import ProductRepository, { Product } from './repositories/products';
-import FactionRepository from './repositories/factions';
-import TransactionRepository from './repositories/transactions';
+import * as SQLite from "expo-sqlite";
+import UserRepository from "./repositories/users";
+import ProductRepository from "./repositories/products";
+import FactionRepository from "./repositories/factions";
+import TransactionRepository from "./repositories/transactions";
+import { initDatabase } from "./db-init";
+import { insertTestData } from "./testing";
 
-const INSERT_TEST_DATA = true;
 const databaseName = "barmap-database";
 
-const min =  1000;
-const max = 10000;
-const rng = () => new Currency(Math.floor(Math.random() * (max - min) + min));
+async function openDatabase(): Promise<SQLite.SQLiteDatabase> {
+    const db = await SQLite.openDatabaseAsync(databaseName);
+    if (!__DEV__) return db;
 
-const DEFAULT_SPENT: Currency = new Currency();
-const DEFAULT_PRICE: Currency = new Currency({ integer: 1, decimal: 0 });
-
-const TEST_FACTION_LIST = [
-    "Wilde Vaart",
-    "Leiding",
-    "Zeeverkenner",
-    "Stam",
-    "Gasten",
-    "Clubs"
-]
-
-const TEST_USER_LIST = [
-    { username: "Mick Olthoff", given_money: rng(), spent_money: DEFAULT_SPENT },
-    { username: "Noah Faas", given_money: rng(), spent_money: DEFAULT_SPENT  },
-    { username: "Cas Kluiters", given_money: rng(), spent_money: DEFAULT_SPENT  },
-    { username: "Gerco Hogeveen", given_money: rng(), spent_money: DEFAULT_SPENT  },
-    { username: "Piet Klaas", given_money: rng(), spent_money: DEFAULT_SPENT  },
-    { username: "Joep Van Der Velde", given_money: rng(), spent_money: DEFAULT_SPENT  },
-    { username: "Theo Turbo", given_money: rng(), spent_money: DEFAULT_SPENT  },
-    { username: "Bram", given_money: rng(), spent_money: DEFAULT_SPENT  },
-    { username: "Owen Huijskes", given_money: rng(), spent_money: DEFAULT_SPENT  },
-    { username: "Rutger Pax", given_money: rng(), spent_money: DEFAULT_SPENT  },
-    { username: "Cay Noya", given_money: rng(), spent_money: DEFAULT_SPENT  },
-    { username: "16characters1234", given_money: rng(), spent_money: DEFAULT_SPENT  },
-];
-
-const TEST_PRODUCT_LIST = [
-    { name: "Fris", price: DEFAULT_PRICE, active: true },
-    { name: "Bier", price: DEFAULT_PRICE, active: true },
-    { name: "Chips", price: DEFAULT_PRICE, active: true },
-    { name: "Snacks", price: DEFAULT_PRICE, active: true },
-];
-
+    await db.closeAsync();
+    await SQLite.deleteDatabaseAsync(databaseName);
+    return await SQLite.openDatabaseAsync(databaseName);
+}
 
 export default class Database {
     readonly inner: SQLite.SQLiteDatabase;
@@ -58,7 +28,7 @@ export default class Database {
         users: UserRepository,
         products: ProductRepository,
         factions: FactionRepository,
-        transactions: TransactionRepository
+        transactions: TransactionRepository,
     ) {
         this.inner = db;
         this.users = users;
@@ -67,22 +37,20 @@ export default class Database {
         this.transactions = transactions;
     }
     static async create(): Promise<Database> {
-        if (__DEV__ && INSERT_TEST_DATA) {
-            await SQLite.deleteDatabaseAsync(databaseName)
-                .catch((reason) => {
-                    if (__DEV__) console.log(reason);
-                    // throw new Error(reason);
-                });
-        }
-
-        const db = await SQLite.openDatabaseAsync(databaseName);
+        let db = await openDatabase();
 
         if (__DEV__) console.log("opened database...");
-        await db.execAsync(`
-            PRAGMA journal_mode = WAL;
-            PRAGMA foreign_keys = ON;
-        `);
-        if (__DEV__) console.log("initialized PRAGMA's...");
+        // if (__DEV__) console.log(`initializing database:\n${INIT_DATABASE}`);
+        try {
+            await initDatabase(db);
+        } catch (reason: any) {
+            if (__DEV__)
+                console.error(
+                    `failed to initalize database: ${reason.message ?? "No reason given."}`,
+                );
+        }
+
+        if (__DEV__) console.log("initialized database...");
         const factions = await FactionRepository.create(db);
         if (__DEV__) console.log("created FactionRepository...");
         const users = await UserRepository.create(db);
@@ -92,60 +60,11 @@ export default class Database {
         const transactions = await TransactionRepository.create(db);
         if (__DEV__) console.log("created TransactionRepository...");
 
-        if (__DEV__&& INSERT_TEST_DATA) {
-            let i = 0;
-            for (const faction of TEST_FACTION_LIST) {
-                try {
-                    await factions.addFaction(faction);
-                } catch (reason) {
-                    const message = `Database: ${reason}`;
-                    if (__DEV__) console.error(message);
-                    throw new Error(message);
-                }
-
-                for (const user of TEST_USER_LIST) {
-                    try {
-                        const data: User = {
-                            id: 0,
-                            username: user.username + ' ' + i.toString(),
-                            given_money: user.given_money,
-                            spent_money: user.spent_money,
-                            balance: user.given_money.sub(user.spent_money),
-                            faction,
-                        }
-                        await users.addUser(data);
-                    } catch (reason) {
-                        const message = `Database: ${reason}`;
-                        if (__DEV__) console.error(message);
-                        throw new Error(message);
-                    }
-                }
-                i += 1;
-            }
-
-            for (const product of TEST_PRODUCT_LIST) {
-                try {
-                    const data: Product = {
-                        id: 0,
-                        price: product.price.value,
-                        active: product.active,
-                        name: product.name,
-                    }
-                    await products.addProduct(data);
-                } catch (reason) {
-                    const message = `Database: ${reason}`;
-                    if (__DEV__) console.error(message);
-                    throw new Error(message);
-                }
-            }
+        if (__DEV__) {
+            await insertTestData(factions, users, products);
+            console.log("Added test data");
         }
-        
-        return new Database(
-            db,
-            users,
-            products,
-            factions,
-            transactions,
-        );
+
+        return new Database(db, users, products, factions, transactions);
     }
 }

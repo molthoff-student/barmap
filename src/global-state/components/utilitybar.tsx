@@ -1,93 +1,113 @@
 import { Pressable, StyleSheet, Text, View } from "react-native";
-import React, { ReactNode, useCallback, useMemo, useState } from "react";
-import { useFactions, useProducts, useUsers } from "../provider";
+import { ReactNode, useCallback, useMemo, useState } from "react";
+import { useProducts, useUsers } from "../provider";
 import Currency from "../../currency";
 import statics from "@/src/static";
 import { COLUMNS } from "./userlist";
 import { Overlay } from "./overlay";
-import { User } from "@/src/database/repositories/users";
+import { ProductManager } from "./overlays/product";
+import { UserManager } from "./overlays/user";
+import { FactionManager } from "./overlays/faction";
+import { Ledger } from "./overlays/ledger";
 
 type UtilityButtonData = {
-    label: string,
-    component?: ReactNode,
-}
+    label: string;
+    component?: ReactNode;
+};
 
 const { color, border } = statics;
-const { width } = border;
 
 const LEFT_PANEL_PERCENT = (100 / 6) * COLUMNS;
 
-function UtilityButton({ label, onPress }: {
-    label: string,
-    onPress?: () => void,
+function UtilityButton({
+    label,
+    onPress,
+    disabled = false,
+}: {
+    label: string;
+    onPress?: () => void;
+    disabled?: boolean;
 }) {
     return (
-        <Pressable style={styles.button} onPress={onPress}>
+        <Pressable
+            style={({ pressed }) => [
+                styles.button,
+                pressed && { opacity: 0.6 },
+                disabled && { opacity: 0.4 },
+            ]}
+            disabled={disabled}
+            onPress={onPress}
+        >
             <Text style={styles.buttonText}>{label}</Text>
         </Pressable>
     );
 }
 
-function AddUser({ exit }: { exit: () => void}) {
-    const { factionList, factionIdx } = useFactions();
-    const [user, setUser] = useState<User>({
-        id: 0,
-        username: "Gebruikersnaam",
-        given_money: new Currency(),
-        spent_money: new Currency(),
-        balance: new Currency(),
-        faction: factionList[factionIdx] || "FactionIdxException",
-    });
-    return (
-        <Overlay exit={exit}>
-            <View style={styles.popup}>
-                <Text style={styles.totalText}>Hello world!</Text>
-            </View>
-        </Overlay>
-    );
-}
-
 export function Utilitybar() {
     const { productList, sellingList } = useProducts();
+    const { selectedUsers } = useUsers();
     const [overlay, setOverlay] = useState<number | null>(null);
 
     const exit = useCallback(() => setOverlay(null), []);
 
     const UtilityButtonList: UtilityButtonData[] = [
-        { label: "Voeg gebruiker toe", component: <AddUser exit={exit} /> },
-        { label: "Voeg speltak toe", component: <Overlay exit={exit} /> },
-        { label: "Voeg product toe", component: <Overlay exit={exit} /> },
-        { label: "Schrijf producten af", component: <Overlay exit={exit} /> },
+        {
+            label: "Beheer speltakken",
+            component: <FactionManager exit={exit} />,
+        },
+        { label: "Beheer gebruikers", component: <UserManager exit={exit} /> },
+        {
+            label: "Beheer producten",
+            component: <ProductManager exit={exit} />,
+        },
+        { label: "Schrijf producten af", component: <Ledger exit={exit} /> },
     ];
 
-    const UtilityButtons = React.memo(function UtilityButtons() {
-        return UtilityButtonList.map(({ label }, index) => (
-            <UtilityButton key={index} label={label} onPress={() => setOverlay(index)} />
-        ));
-    })
-
     const total = useMemo(() => {
-        let sum = 0;
-        sellingList.forEach((quantity, id) => {
-            const product = productList.find(p => p.id === id);
-            if (product) sum += product.price * quantity;
+        let total = new Currency();
+
+        sellingList.forEach((value, key) => {
+            const product = productList.find((p) => p.id === key);
+            if (product) {
+                const price = product.price.mul(value);
+                total = total.add(price);
+            }
         });
-        return new Currency(sum);
+        return total;
     }, [sellingList, productList]);
 
+    if (__DEV__) console.log(`total: ${total}`);
     if (__DEV__) console.log(`overlay: ${overlay}`);
 
     return (
         <>
             <View style={styles.container}>
                 <View style={styles.buttonGroup}>
-                    <UtilityButtons />
+                    {UtilityButtonList.map(({ label }, index) => {
+                        const disabled =
+                            index === UtilityButtonList.length - 1 &&
+                            (sellingList.size <= 0 || selectedUsers.size <= 0);
+
+                        return (
+                            <UtilityButton
+                                key={index}
+                                label={label}
+                                onPress={() => {
+                                    setOverlay(index);
+                                }}
+                                disabled={disabled}
+                            />
+                        );
+                    })}
                 </View>
                 <View style={styles.totalBlock}>
-                    <Text style={styles.totalText}>Totaal: {total.toString()}</Text>
+                    <Text style={styles.totalText}>
+                        Totaal: {total.toString()}
+                    </Text>
                 </View>
             </View>
-            { typeof overlay === "number" && UtilityButtonList[overlay].component }
+            {typeof overlay === "number" &&
+                UtilityButtonList[overlay].component}
         </>
     );
 }
@@ -101,52 +121,50 @@ const styles = StyleSheet.create({
     },
 
     container: {
-        flexDirection: 'row',
-        width: '100%',
+        flexDirection: "row",
+        width: "100%",
         height: 60,
     },
 
     buttonGroup: {
         width: `${LEFT_PANEL_PERCENT}%`,
-        flexDirection: 'row',
-        alignItems: 'center',
-        paddingHorizontal: 10,
+        flexDirection: "row",
+        alignItems: "stretch",
         gap: 10,
-        borderWidth: width.section,
-        borderColor: color.accent,
+        padding: 10,
+        ...border.section,
     },
 
     button: {
+        flex: 1,
         height: 40,
-        paddingHorizontal: 16,
         borderRadius: 10,
-        borderWidth: width.default,
-        borderColor: color.accent,
         backgroundColor: color.overlay,
-        alignItems: 'center',
-        justifyContent: 'center',
+        alignItems: "center",
+        justifyContent: "center",
+        ...border.default,
     },
 
     buttonText: {
         fontFamily: "monospace",
-        fontWeight: 'bold',
+        fontWeight: "bold",
         fontSize: 15,
-        color: color.accent,
+        color: color.primary,
     },
 
     totalBlock: {
         width: `${100 - LEFT_PANEL_PERCENT}%`,
-        borderWidth: width.section,
-        borderColor: color.accent,
+        borderWidth: statics.width.section,
+        borderColor: color.primary,
         borderLeftWidth: 0,
-        alignItems: 'center',
-        justifyContent: 'center',
+        alignItems: "center",
+        justifyContent: "center",
     },
 
     totalText: {
         fontFamily: "monospace",
-        fontWeight: 'bold',
+        fontWeight: "bold",
         fontSize: 18,
-        color: color.accent,
+        color: color.primary,
     },
 });
