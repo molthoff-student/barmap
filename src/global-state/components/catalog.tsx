@@ -1,4 +1,12 @@
-import { FlatList, Pressable, StyleSheet, Text, View } from "react-native";
+import {
+    FlatList,
+    Insets,
+    Pressable,
+    PressableProps,
+    StyleSheet,
+    Text,
+    View,
+} from "react-native";
 import { useProducts } from "../provider";
 import { Product } from "../../database/repositories/products";
 import React, { useCallback, useEffect, useRef, useState } from "react";
@@ -12,6 +20,19 @@ const SUB = "-";
 const COLUMNS = 2;
 const GAP = 3;
 const CARD_WIDTH = 100 / COLUMNS - GAP;
+const HITSLOP_RADIUS = 25;
+const hitSlopHorizontal: Insets = {
+    left: HITSLOP_RADIUS,
+    right: HITSLOP_RADIUS,
+};
+const hitSlopTop: Insets = {
+    top: HITSLOP_RADIUS,
+    ...hitSlopHorizontal,
+};
+const hitSlopBottom: Insets = {
+    bottom: HITSLOP_RADIUS,
+    ...hitSlopHorizontal,
+};
 
 function ControlsRow({
     button,
@@ -20,6 +41,7 @@ function ControlsRow({
     onPress,
     onHeld,
     style,
+    hitSlop,
 }: {
     button: string;
     description: string | number | boolean;
@@ -27,6 +49,7 @@ function ControlsRow({
     onPress: () => void;
     onHeld: () => void;
     style: typeof styles.sub | typeof styles.add;
+    hitSlop: PressableProps["hitSlop"];
 }) {
     const interval = useRef<ReturnType<typeof setInterval> | null>(null);
     const wasHeld = useRef(false);
@@ -61,7 +84,12 @@ function ControlsRow({
     return (
         <View style={styles.controlsRow}>
             <Pressable
-                style={[styles.button, style]}
+                style={({ pressed }) => [
+                    styles.button,
+                    pressed && { opacity: 0.5 },
+                    style,
+                ]}
+                hitSlop={hitSlop}
                 onPress={handlePress}
                 onPressIn={onPressIn}
                 onPressOut={onPressOut}
@@ -105,6 +133,7 @@ const ProductCard = React.memo(function ProductCard({
                         description={quantity}
                         price={fullPrice}
                         style={styles.add}
+                        hitSlop={hitSlopTop}
                         onPress={() => sellProduct(item.id, true)}
                         onHeld={() => sellProduct(item.id, true, 5)}
                     />
@@ -114,6 +143,7 @@ const ProductCard = React.memo(function ProductCard({
                         description={item.name}
                         price={basePrice}
                         style={styles.sub}
+                        hitSlop={hitSlopBottom}
                         onPress={() => sellProduct(item.id, false)}
                         onHeld={() => sellProduct(item.id, false, 5)}
                     />
@@ -201,7 +231,7 @@ const styles = StyleSheet.create({
     },
 
     activeCard: {
-        borderColor: color.highlight,
+        borderColor: color.secondary,
         borderWidth: 4,
     },
 
@@ -209,7 +239,7 @@ const styles = StyleSheet.create({
         width: `${(100 / 6) * (6 - 4)}%`,
         height: "100%",
         flex: 1,
-        borderRightColor: color.accent,
+        borderRightColor: color.primary,
         borderRightWidth: width.default,
         // ...border.default,
     },
@@ -222,14 +252,13 @@ const styles = StyleSheet.create({
     },
 
     name: {
-        color: color.accent,
         marginBottom: 6,
         ...fonts.default,
     },
 
     controlsBlock: {
         width: "100%",
-        borderTopColor: color.accent,
+        borderTopColor: color.primary,
         borderTopWidth: width.default,
     },
 
@@ -240,7 +269,7 @@ const styles = StyleSheet.create({
 
     divider: {
         height: width.default,
-        backgroundColor: color.accent,
+        backgroundColor: color.primary,
     },
 
     button: {
@@ -248,7 +277,7 @@ const styles = StyleSheet.create({
         alignItems: "center",
         justifyContent: "center",
         borderRightWidth: width.default,
-        borderRightColor: color.accent,
+        borderRightColor: color.primary,
         ...fonts.default,
     },
 
@@ -260,10 +289,7 @@ const styles = StyleSheet.create({
         backgroundColor: "#00c76f",
     },
 
-    buttonText: {
-        color: color.default,
-        ...fonts.default,
-    },
+    buttonText: fonts.default,
 
     textCell: {
         flex: 1,
@@ -274,8 +300,5 @@ const styles = StyleSheet.create({
         backgroundColor: color.overlay,
     },
 
-    controlsText: {
-        color: color.accent,
-        ...fonts.bold,
-    },
+    controlsText: fonts.bold,
 });
