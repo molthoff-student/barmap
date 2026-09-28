@@ -58,7 +58,7 @@ export default class Currency {
 
 
     toString(len = 8, value = this.#value): string {
-        const currency = value / 100;
+        const currency = value * 0.01;
         return "€" + currency.toFixed(2).padStart(len);
     }
 }

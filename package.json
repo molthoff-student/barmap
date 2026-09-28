@@ -5,6 +5,7 @@
   "dependencies": {
     "@react-native-picker/picker": "2.11.4",
     "check": "^1.0.0",
+    "exceljs": "^4.4.0",
     "expo": "~57.0.17",
     "expo-crypto": "~57.0.2",
     "expo-file-system": "~57.0.6",
