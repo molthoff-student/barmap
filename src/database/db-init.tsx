@@ -22,7 +22,7 @@ const CREATE_USER_TBL: string = `
         given_money INTEGER NOT NULL DEFAULT 0,
         spent_money INTEGER NOT NULL DEFAULT 0,
         faction TEXT NOT NULL,
-        active INTEGER NOT NULL DEFAULT 0
+        active INTEGER NOT NULL DEFAULT 1
             CHECK (active IN (0, 1)),
 
         FOREIGN KEY (faction)
@@ -137,8 +137,8 @@ export async function initDatabase(db: SQLiteDatabase): Promise<void> {
     await runSqlAsync(db, INIT_PRAGMAS, "CREATE_PRAGMAS");
     await runSqlAsync(db, CREATE_FACTIONS_TBL, "CREATE_FACTIONS_TBL");
     await runSqlAsync(db, CREATE_USER_TBL, "CREATE_USER_TBL");
-    await runSqlAsync(db, CREATE_CREDIT_TABLE, "CREATE_CREDIT_TABLE");
     await runSqlAsync(db, CREATE_PRODUCT_TBL, "CREATE_PRODUCT_TBL");
+    await runSqlAsync(db, CREATE_CREDIT_TABLE, "CREATE_CREDIT_TABLE");
     await runSqlAsync(db, CREATE_TRANSACTIONS_TBL, "CREATE_TRANSACTIONS_TBL");
     await runSqlAsync(db, UPDATE_USER_TRIGGER, "UPDATE_USER_TRIGGER");
     await runSqlAsync(db, INSERT_USER_TRIGGER, "INSERT_USER_TRIGGER");
