@@ -5,6 +5,11 @@ import { TRANSACTIONS as REPO } from "../db-init";
 
 if (__DEV__) console.log("TRANSACTIONS / REPO =", REPO);
 
+const GET_ALL_TRANSACTIONS: string = `
+    SELECT * FROM ${REPO}
+    ORDER BY created_at DESC;
+`;
+
 const GET_TRANSACTIONS_BY_USER: string = `
     SELECT * FROM ${REPO}
     WHERE user_id = ?
@@ -46,9 +51,10 @@ const GET_MOST_BOUGHT_BY_USERS: string = `
     SELECT user_name, product_name, total_bought, total_spent
     FROM ranked_transactions
     WHERE purchase_rank = 1;
+    ORDER BY user_name
 `;
 
-type SQLTransaction = {
+export type SQLTransaction = {
     id: number;
     user_id: number;
     product_id: number;
@@ -105,6 +111,7 @@ function sqlToTransactionStat(
 }
 
 type Queries = {
+    getAllTransactions: SQLiteStatement;
     transactionByUser: SQLiteStatement;
     insertTransaction: SQLiteStatement;
     // updateUserSpent: SQLiteStatement;
@@ -123,20 +130,21 @@ export default class TransactionRepository {
     ): Promise<TransactionRepository> => {
         if (__DEV__) console.log(`TransactionRepository created.`);
         const [
+            getAllTransactions,
             transactionByUser,
             insertTransaction,
-            // updateUserSpent,
             getMostBoughtByUsers,
         ] = await Promise.all([
+            compileSQL(db, GET_ALL_TRANSACTIONS),
             compileSQL(db, GET_TRANSACTIONS_BY_USER),
             compileSQL(db, INSERT_TRANSACTION),
-            // compileSQL(db, UPDATE_USER_SPENT),
             compileSQL(db, GET_MOST_BOUGHT_BY_USERS),
         ]);
 
         if (__DEV__) console.log(`TransactionRepository queries compiled.`);
 
         const queries: Queries = {
+            getAllTransactions,
             transactionByUser,
             insertTransaction,
             // updateUserSpent,
@@ -149,14 +157,24 @@ export default class TransactionRepository {
             );
         return new TransactionRepository(queries, db);
     };
-    getTransactionsByUser = async (
-        name: string,
-    ): Promise<Transaction[] | null> => {
+    getAllTransactions = async (): Promise<Transaction[]> => {
+        const transactions = await this.queries.getAllTransactions
+            .executeAsync<SQLTransaction>()
+            .then((result) => result.getAllAsync())
+            .catch((reason) => {
+                throw new Error(`getAllTransactions: ${reason.message}`);
+            });
+
+        return transactions.map(
+            (transaction) => sqlToTransaction(transaction)!,
+        );
+    };
+    getTransactionsByUser = async (name: string): Promise<Transaction[]> => {
         const transactions = await this.queries.transactionByUser
             .executeAsync<SQLTransaction>(name)
             .then((result) => result.getAllAsync())
             .catch((reason) => {
-                throw new Error(`getProductByName: ${reason.message}`);
+                throw new Error(`getTransactionsByUser: ${reason.message}`);
             });
 
         if (__DEV__)

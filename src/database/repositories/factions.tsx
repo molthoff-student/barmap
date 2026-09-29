@@ -43,7 +43,7 @@ type Queries = {
     addFaction: SQLiteStatement;
 };
 
-type SQLFaction = {
+export type SQLFaction = {
     id: number;
     name: string;
     active: number;
@@ -95,7 +95,7 @@ export default class FactionRepository {
 
         return new FactionRepository(queries);
     }
-    getAllFactions = async (): Promise<Faction[] | null> => {
+    getAllFactions = async (): Promise<Faction[]> => {
         const factions = await this.queries.getAllFactions
             .executeAsync<SQLFaction>()
             .then((result) => result.getAllAsync())
