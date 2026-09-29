@@ -18,7 +18,7 @@ Nee. Het product is grotendeels af, maar er ontbreken nog functionaliteiten.
 
 ### B1-K1-W1: Stemt opdracht af, plant werkzaamheden en bewaakt voortgang
 
-Het afstemmen van de opdrachtging goed en de planning met een kanban-bord en checklist in de agenda waren gemaakt, maar niet bewaakt. ...
+Het afstemmen van de opdrachtging goed en de planning met een kanban-bord en checklist in de agenda waren gemaakt, maar niet goed bewaakt. Wanneer iets al af was bleef ik er vaak alsnog aan werken.
 
 ### B1-K1-W2: Maakt een technisch ontwerp voor software, user interface & database design
 
