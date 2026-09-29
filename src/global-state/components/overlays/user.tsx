@@ -43,6 +43,7 @@ const defaultUser = (faction: string): User => {
         spent_money: new Currency(),
         balance: new Currency(),
         faction,
+        active: true,
     };
 };
 
