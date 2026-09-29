@@ -1,4 +1,5 @@
 import {
+    Alert,
     GestureResponderEvent,
     Pressable,
     ScrollView,
@@ -17,6 +18,11 @@ import Loading from "../loading";
 import Currency from "../currency";
 import { exportDatabaseToExcel } from "./excel-export";
 import TransactionRepository from "../database/repositories/transactions";
+import Database from "../database/interface";
+
+function requestDbCleanup(database: Database) {
+    throw new Error("unimplemented");
+}
 
 type RecordListEntry = {
     title?: string;
@@ -136,12 +142,57 @@ export function Burger({
     );
 }
 
+function ConfirmRequest(onPress?: () => void) {
+    Alert.alert(
+        "",
+        "Are you sure you want to continue?",
+        [
+            {
+                text: "Cancel",
+                style: "cancel",
+            },
+            {
+                text: "Confirm",
+                onPress,
+            },
+        ],
+        { cancelable: true },
+    );
+}
+
+function Button({
+    label,
+    onPress,
+    disabled = false,
+    important = false,
+}: {
+    label: string;
+    onPress?: () => void;
+    disabled?: boolean;
+    important?: boolean;
+}) {
+    const click = important ? ConfirmRequest(onPress) : onPress;
+    return (
+        <Pressable
+            style={({ pressed }) => [
+                styles.button,
+                pressed && { opacity: 0.6 },
+                disabled && { opacity: 0.4 },
+            ]}
+            disabled={disabled}
+            onPress={() => click}
+        >
+            <Text style={styles.buttonText}>{label}</Text>
+        </Pressable>
+    );
+}
+
 function ExportButton() {
     const { database } = useDatabase();
     return (
         <Pressable
             style={styles.exportButton}
-            onPress={() => exportDatabaseToExcel(database.inner)}
+            onPress={() => exportDatabaseToExcel(database)}
         >
             <Text style={styles.exportButtonText}>Exporteer</Text>
         </Pressable>
@@ -282,6 +333,22 @@ const styles = StyleSheet.create({
         color: color.primary,
         textTransform: "uppercase",
         letterSpacing: 0.5,
+    },
+    button: {
+        flex: 1,
+        height: 40,
+        borderRadius: 10,
+        backgroundColor: color.overlay,
+        alignItems: "center",
+        justifyContent: "center",
+        ...border.default,
+    },
+
+    buttonText: {
+        fontFamily: "monospace",
+        fontWeight: "bold",
+        fontSize: 15,
+        color: color.primary,
     },
     header: {
         flexDirection: "row",

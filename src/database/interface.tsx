@@ -5,6 +5,7 @@ import FactionRepository from "./repositories/factions";
 import TransactionRepository from "./repositories/transactions";
 import { initDatabase } from "./db-init";
 import { insertTestData } from "./testing";
+import CreditsRepository from "./repositories/credits";
 
 const databaseName = "barmap-database";
 
@@ -23,18 +24,21 @@ export default class Database {
     readonly products: ProductRepository;
     readonly factions: FactionRepository;
     readonly transactions: TransactionRepository;
+    readonly credits: CreditsRepository;
     constructor(
         db: SQLite.SQLiteDatabase,
         users: UserRepository,
         products: ProductRepository,
         factions: FactionRepository,
         transactions: TransactionRepository,
+        credits: CreditsRepository,
     ) {
         this.inner = db;
         this.users = users;
         this.products = products;
         this.factions = factions;
         this.transactions = transactions;
+        this.credits = credits;
     }
     static async create(): Promise<Database> {
         let db = await openDatabase();
@@ -59,12 +63,21 @@ export default class Database {
         if (__DEV__) console.log("created ProductRepository...");
         const transactions = await TransactionRepository.create(db);
         if (__DEV__) console.log("created TransactionRepository...");
+        const credits = await CreditsRepository.create(db);
+        if (__DEV__) console.log("created CreditsRepository...");
 
         if (__DEV__) {
             await insertTestData(factions, users, products);
             console.log("Added test data");
         }
 
-        return new Database(db, users, products, factions, transactions);
+        return new Database(
+            db,
+            users,
+            products,
+            factions,
+            transactions,
+            credits,
+        );
     }
 }

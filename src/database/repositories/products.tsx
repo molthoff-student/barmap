@@ -49,7 +49,7 @@ type Queries = {
     addProduct: SQLiteStatement;
 };
 
-type SQLProduct = {
+export type SQLProduct = {
     id: number;
     name: string;
     price: number;

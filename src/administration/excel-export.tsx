@@ -1,88 +1,123 @@
-import * as SQLite from "expo-sqlite";
 import { File, Paths } from "expo-file-system";
 import * as LegacyFileSystem from "expo-file-system/legacy"; // SAF lives only in the legacy module
+import * as DocumentPicker from "expo-document-picker";
 import * as Sharing from "expo-sharing";
 import { Platform } from "react-native";
 import * as XLSX from "xlsx";
-import ExcelJS from "exceljs";
-import UserRepository, { User } from "../database/repositories/users";
-import { Faction } from "../database/repositories/factions";
+import Database from "../database/interface";
+import {
+    FACTIONS,
+    USERS,
+    PRODUCTS,
+    CREDIT,
+    TRANSACTIONS,
+} from "../database/db-init";
+import { SQLUser } from "../database/repositories/users";
+import { SQLFaction } from "../database/repositories/factions";
+import { SQLCredit } from "../database/repositories/credits";
+import { SQLProduct } from "../database/repositories/products";
+import { SQLTransaction } from "../database/repositories/transactions";
 
-function buildFactionTable(factions: Faction[]): ExcelJS.TableProperties {
-    const rows = factions.map((faction) => ([
-        faction.id,
-        faction.name,
-        faction.active,
-    ]));
+async function pickJsonFile() {
+    const result = await DocumentPicker.getDocumentAsync({
+        type: "application/json",
+        copyToCacheDirectory: true,
+    });
 
-    const columns = [
-        { name: "Id" },
-        { name: "Naam" },
-        { name: "Actief" },
-    ]
+    if (result.canceled) {
+        return null;
+    }
 
-    return {
-        name: "Speltakken",
-        ref: "A1",
-        headerRow: true,
-        totalsRow: false,
-        style: {
-            theme: "TableStyleDark1",
-            showRowStripes: true,
-        },
-        columns,
-        rows,
-    };
+    const file = new File(result.assets[0].uri);
+    const contents = await file.text();
+
+    return JSON.parse(contents);
 }
 
-function buildUserTable(users: User[]): ExcelJS.TableProperties {
-    const rows = users.map((user) => ([
-            user.id,
-            user.name,
-            user.given_money.value * 0.01,
-            user.spent_money.value * 0.01,
-            user.balance.value * 0.01,
-            user.faction,
-        ]));
-    
-    const columns = [
-        { name: "Id" },
-        { name: "Naam" },
-        { name: "Inleg" },
-        { name: "Uitgaven" },
-        { name: "Balans" },
-        { name: "Speltak" },
-    ]
-
-    return {
-        name: "Gebruikers",
-        ref: "A1",
-        headerRow: true,
-        totalsRow: false,
-        style: {
-            theme: "TableStyleDark1",
-            showRowStripes: true,
-        },
-        columns,
-        rows,
-    };
+function convertDbName(dbname: string): string {
+    switch (dbname) {
+        case FACTIONS:
+            return "Speltakken";
+        case USERS:
+            return "Gebruikers";
+        case PRODUCTS:
+            return "Producten";
+        case CREDIT:
+            return "Krediet";
+        case TRANSACTIONS:
+            return "Transacties";
+        default:
+            return dbname;
+    }
 }
 
-async function buildWorkbookBase64(db: SQLite.SQLiteDatabase): Promise<string> {
-    const tableNames = await db
+function convertDbRows(
+    dbname: string,
+    dbrows: Record<string, any>[],
+): Record<string, any>[] {
+    switch (dbname) {
+        case FACTIONS:
+            return (dbrows as SQLFaction[]).map((value) => ({
+                ["ID"]: value.id,
+                ["Naam"]: value.name,
+                ["Actief"]: value.active === 1,
+            }));
+        case USERS:
+            return (dbrows as SQLUser[]).map((value) => ({
+                ["ID"]: value.id,
+                ["Naam"]: value.name,
+                ["Inleg"]: value.given_money * 0.01,
+                ["Uitgave"]: value.spent_money * 0.01,
+                ["Balans"]: (value.given_money - value.spent_money) * 0.01,
+                ["Speltak"]: value.faction,
+                ["Actief"]: value.active === 1,
+            }));
+        case PRODUCTS:
+            return (dbrows as SQLProduct[]).map((value) => ({
+                ["ID"]: value.id,
+                ["Naam"]: value.name,
+                ["Prijs"]: value.price * 0.01,
+                ["Actief"]: value.active === 1,
+            }));
+        case CREDIT:
+            return (dbrows as SQLCredit[]).map((value) => ({
+                ["ID"]: value.id,
+                ["Gebruiker ID"]: value.user_id,
+                ["Inleg"]: value.given_money * 0.01,
+                ["Datum"]: value.created_at,
+            }));
+        case TRANSACTIONS:
+            return (dbrows as SQLTransaction[]).map((value) => ({
+                ["ID"]: value.id,
+                ["Gebruiker ID"]: value.user_id,
+                ["Product ID"]: value.product_id,
+                ["Aantal"]: value.amount_bought,
+                ["Kosten"]: value.amount_spent * 0.01,
+                ["Datum"]: value.created_at,
+            }));
+        default:
+            return dbrows;
+    }
+}
+
+async function buildWorkbookBase64(db: Database): Promise<string> {
+    const tableNames = await db.inner
         .getAllAsync<{ name: string }>(
             `SELECT name FROM sqlite_master WHERE type = "table" AND name NOT LIKE "sqlite_%"`,
         )
         .then((tables) => tables.map((row) => row.name))
         .catch((reason) => {
-            throw new Error(`buildWorkbookBase64: ${reason}`);
+            throw new Error(`buildWorkbookBase64: ${reason.message}`);
         });
 
     const tables: Record<string, Record<string, any>[]> = {};
-    for (const name of tableNames) {
-        tables[name] = await db.getAllAsync<Record<string, any>>(
-            `SELECT * FROM "${name}"`,
+    for (const dbname of tableNames) {
+        const name = convertDbName(dbname);
+        const dbRows = await db.inner.getAllAsync<Record<string, any>>(
+            `SELECT * FROM "${dbname}"`,
         );
+        const rows = convertDbRows(dbname, dbRows);
+        tables[name] = rows;
     }
 
     const workbook = XLSX.utils.book_new();
@@ -110,13 +145,10 @@ async function buildWorkbookBase64(db: SQLite.SQLiteDatabase): Promise<string> {
     return XLSX.write(workbook, { type: "base64", bookType: "xlsx" }) as string;
 }
 
-
 const { StorageAccessFramework } = LegacyFileSystem;
 const androidOsMimeType =
     "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
-export async function exportDatabaseToExcel(
-    db: SQLite.SQLiteDatabase,
-): Promise<void> {
+export async function exportDatabaseToExcel(db: Database): Promise<void> {
     const base64 = await buildWorkbookBase64(db);
     const fileName = `export_${Date.now()}.xlsx`;
 

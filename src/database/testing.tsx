@@ -30,6 +30,7 @@ const users: User[] = jsonDataArray.flatMap((item) =>
             sqlToUser({
                 id: 0,
                 faction: item.faction,
+                active: 1,
                 ...user,
             })!,
     ),

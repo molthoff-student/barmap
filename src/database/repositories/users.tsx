@@ -31,7 +31,8 @@ const EDIT_USER = `
             + MAX(0, ? - (given_money - spent_money)),
         spent_money = spent_money
             + MAX(0, (given_money - spent_money) - ?),
-        faction = ?
+        faction = ?,
+        active = ?
     WHERE id = ?;
 `;
 
@@ -57,12 +58,23 @@ type Queries = {
     addUser: SQLiteStatement;
 };
 
-type SQLUser = {
+export type SQLUser = {
     id: number;
     name: string;
     given_money: number;
     spent_money: number;
     faction: string;
+    active: number;
+};
+
+export type User = {
+    id: number;
+    name: string;
+    given_money: Currency;
+    spent_money: Currency;
+    balance: Currency;
+    faction: string;
+    active: boolean;
 };
 
 export const sqlToUser = (user: SQLUser | null): User | null => {
@@ -74,16 +86,8 @@ export const sqlToUser = (user: SQLUser | null): User | null => {
         spent_money: new Currency(user.spent_money),
         balance: new Currency(user.given_money - user.spent_money),
         faction: user.faction,
+        active: user.active === 1,
     };
-};
-
-export type User = {
-    id: number;
-    name: string;
-    given_money: Currency;
-    spent_money: Currency;
-    balance: Currency;
-    faction: string;
 };
 
 export default class UserRepository {
@@ -136,7 +140,7 @@ export default class UserRepository {
 
         return users.map((user) => sqlToUser(user)!);
     };
-    getAllUsers = async (): Promise<User[] | null> => {
+    getAllUsers = async (): Promise<User[]> => {
         const users = await this.queries.allUsers
             .executeAsync<SQLUser>()
             .then((result) => result.getAllAsync())
@@ -162,6 +166,7 @@ export default class UserRepository {
                 user.balance.value,
                 user.balance.value,
                 user.faction,
+                user.active,
                 user.id,
             )
             .then((res) => {
