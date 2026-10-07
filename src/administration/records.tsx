@@ -16,13 +16,11 @@ import { useEffect, useState } from "react";
 import UserRepository, { User } from "../database/repositories/users";
 import Loading from "../loading";
 import Currency from "../currency";
-import { exportDatabaseToExcel } from "./excel-export";
+import { exportDatabaseToExcel, importDatabaseFromExcel } from "./excel-export";
 import TransactionRepository from "../database/repositories/transactions";
 import Database from "../database/interface";
-
-function requestDbCleanup(database: Database) {
-    throw new Error("unimplemented");
-}
+import { Seperator } from "../global-state/components/overlays/shared";
+import { CREDIT, TRANSACTIONS } from "../database/db-init";
 
 type RecordListEntry = {
     title?: string;
@@ -90,35 +88,28 @@ async function loadStatistics(
         value.total_spent.toString(len),
     ]);
 
-    const statistics: RecordListEntry[][] = [
+    const mostList = [
         [
-            {
-                stats: [
-                    [
-                        "Meeste ingelegd",
-                        given_money.name,
-                        given_money.given_money.toString(len),
-                    ],
-                    [
-                        "Meeste uitgegeven",
-                        spent_money.name,
-                        spent_money.spent_money.toString(len),
-                    ],
-                    [
-                        "Hoogste balans",
-                        balance.name,
-                        balance.balance.toString(len),
-                    ],
-                ],
-            },
-            {
-                stats: [
-                    ["Totaal ingelegd", totalGiven.toString(len)],
-                    ["Totaal uitgegeven", totalSpent.toString(len)],
-                    ["Aantal gebruikers", userList.length.toString(10)],
-                ],
-            },
+            "Meeste ingelegd",
+            given_money.name,
+            given_money.given_money.toString(len),
         ],
+        [
+            "Meeste uitgegeven",
+            spent_money.name,
+            spent_money.spent_money.toString(len),
+        ],
+        ["Hoogste balans", balance.name, balance.balance.toString(len)],
+    ];
+
+    const totalList = [
+        ["Totaal ingelegd", totalGiven.toString(len)],
+        ["Totaal uitgegeven", totalSpent.toString(len)],
+        ["Aantal gebruikers", userList.length.toString(10)],
+    ];
+
+    const statistics: RecordListEntry[][] = [
+        [{ stats: mostList }, { stats: totalList }],
         [
             { title: "Hoogste balansen", stats: balanceLeaderboard },
             { title: "Grootste kopers", stats: buyerLeaderboard },
@@ -142,22 +133,65 @@ export function Burger({
     );
 }
 
-function ConfirmRequest(onPress?: () => void) {
-    Alert.alert(
-        "",
-        "Are you sure you want to continue?",
-        [
-            {
-                text: "Cancel",
-                style: "cancel",
-            },
-            {
-                text: "Confirm",
-                onPress,
-            },
-        ],
-        { cancelable: true },
+async function CleanDatabase(db: Database) {
+    await db.wipeTable(CREDIT);
+    await db.wipeTable(TRANSACTIONS);
+}
+
+type FooterButton = {
+    label: string;
+    onPress: () => void;
+    important?: boolean;
+};
+
+function Footer() {
+    const { database } = useDatabase();
+
+    const FooterButtons: FooterButton[] = [
+        { label: "Export", onPress: () => exportDatabaseToExcel(database) },
+        {
+            label: "Import",
+            onPress: () => importDatabaseFromExcel(database),
+            important: true,
+        },
+        {
+            label: "Opschonen",
+            onPress: () => console.log("Hello world!"),
+            important: true,
+        },
+    ];
+
+    return (
+        <View style={[styles.pageShell, styles.footer]}>
+            {FooterButtons.map((value, index) => (
+                <Button
+                    key={index}
+                    label={value.label}
+                    onPress={value.onPress}
+                    important={value.important}
+                />
+            ))}
+        </View>
     );
+}
+
+function ConfirmRequest(onPress?: () => void): () => void {
+    return () =>
+        Alert.alert(
+            "",
+            "Are you sure you want to continue?",
+            [
+                {
+                    text: "Cancel",
+                    style: "cancel",
+                },
+                {
+                    text: "Confirm",
+                    onPress,
+                },
+            ],
+            { cancelable: true },
+        );
 }
 
 function Button({
@@ -180,21 +214,12 @@ function Button({
                 disabled && { opacity: 0.4 },
             ]}
             disabled={disabled}
-            onPress={() => click}
+            onPress={() => {
+                if (__DEV__) console.log(`Clicked '${label}'`);
+                if (click) click();
+            }}
         >
             <Text style={styles.buttonText}>{label}</Text>
-        </Pressable>
-    );
-}
-
-function ExportButton() {
-    const { database } = useDatabase();
-    return (
-        <Pressable
-            style={styles.exportButton}
-            onPress={() => exportDatabaseToExcel(database)}
-        >
-            <Text style={styles.exportButtonText}>Exporteer</Text>
         </Pressable>
     );
 }
@@ -260,10 +285,9 @@ export function Records({ exit }: { exit?: () => void }) {
     return (
         <Overlay noViewStyle={true}>
             <View style={styles.content}>
-                <View style={styles.header}>
+                <View style={[styles.pageShell, styles.header]}>
                     <Burger onPress={exit} />
                     <Text style={styles.title}>{"Statistieken"}</Text>
-                    <ExportButton />
                 </View>
                 <ScrollView
                     style={styles.scroll}
@@ -289,6 +313,8 @@ export function Records({ exit }: { exit?: () => void }) {
                             </View>
                         );
                     })}
+                    <Seperator />
+                    <Footer />
                 </ScrollView>
             </View>
         </Overlay>
@@ -318,22 +344,6 @@ const styles = StyleSheet.create({
         backgroundColor: color.primary,
         marginVertical: 2,
     },
-    exportButton: {
-        height: TAB_HEIGHT,
-        justifyContent: "center",
-        alignItems: "center",
-        paddingHorizontal: 14,
-        backgroundColor: "transparent",
-        ...border.section,
-    },
-    exportButtonText: {
-        fontFamily: "monospace",
-        fontSize: 13,
-        fontWeight: "700",
-        color: color.primary,
-        textTransform: "uppercase",
-        letterSpacing: 0.5,
-    },
     button: {
         flex: 1,
         height: 40,
@@ -343,35 +353,34 @@ const styles = StyleSheet.create({
         justifyContent: "center",
         ...border.default,
     },
-
-    buttonText: {
-        fontFamily: "monospace",
-        fontWeight: "bold",
-        fontSize: 15,
-        color: color.primary,
-    },
-    header: {
+    buttonText: fonts.default,
+    pageShell: {
         flexDirection: "row",
         alignItems: "stretch",
-        justifyContent: "flex-start",
         width: "100%",
+    },
+    header: {
+        justifyContent: "flex-start",
+    },
+    footer: {
+        gap: 10,
+        justifyContent: "space-between",
+        paddingVertical: 5,
     },
     title: {
         flex: 1,
-        fontFamily: "monospace",
-        fontSize: 20,
-        fontWeight: "700",
-        color: color.primary,
         borderBottomColor: color.primary,
         borderBottomWidth: statics.width.section,
         height: TAB_HEIGHT,
         lineHeight: TAB_HEIGHT - statics.width.section,
         paddingLeft: 12,
         letterSpacing: 0.5,
+        ...fonts.bold,
     },
     sectionTitle: {
         marginTop: 8,
         marginBottom: 4,
+        paddingHorizontal: 8,
         // textTransform: "uppercase",
         letterSpacing: 0.5,
         ...fonts.bold,
@@ -384,7 +393,7 @@ const styles = StyleSheet.create({
         ...border.default,
     },
     scrollContent: {
-        paddingHorizontal: 16,
+        // paddingHorizontal: 16,
         paddingBottom: 32,
         gap: 12,
     },
@@ -392,19 +401,10 @@ const styles = StyleSheet.create({
         flex: 1,
         marginHorizontal: 4,
     },
-    // statGrid: {
-    //     flexDirection: "row",
-    //     flexWrap: "wrap",
-    // },
-    // cardRow: {
-    //     flexDirection: "row",
-    //     width: "50%",
-    //     padding: 8,
-    //     gap: 10,
-    // },
     listBlock: {
         borderRadius: 10,
         overflow: "hidden",
+        marginHorizontal: 10,
         ...border.default,
     },
     row: {
