@@ -18,7 +18,7 @@ Ja, deze sprint is het beter gelukt om de geplande werkzaamheden binnen de besch
 
 Een belangrijke reden hiervoor is dat ik mij tijdens deze sprint beter aan de afgesproken scope heb gehouden. In de vorige sprint bleef ik regelmatig werken aan onderdelen die al waren afgevinkt. Tijdens deze sprint heb ik geprobeerd om dit niet opnieuw te doen.
 
-Wanneer een functionaliteit aan de eisen voldeed, heb ik deze afgevinkt en heb ik er verder niet meer aan gewerkt. Verbeteringen die niet noodzakelijk waren voor de geplande functionaliteit heb ik zoveel mogelijk laten liggen.
+Wanneer een functionaliteit aan de eisen voldeed, beschouwde ik deze als afgerond. Verbeteringen die niet noodzakelijk waren voor de geplande functionaliteit heb ik zoveel mogelijk laten liggen.
 
 Hierdoor kon ik mijn aandacht richten op de onderdelen die daadwerkelijk nog moesten worden gerealiseerd.
 
@@ -82,4 +82,71 @@ Ook het werken met Git en development branches bleef prettig. Hierdoor kon ik wi
 
 Het moeilijkste onderdeel bleef het bewaken van mijn eigen planning en het niet blijven verbeteren van onderdelen die al voldoende waren.
 
-Hoewel dit tijdens deze
+Hoewel dit tijdens deze sprint beter ging, blijft dit voor mij een aandachtspunt. Wanneer ik tijdens het programmeren een verbetering zie, vind ik het nog steeds lastig om deze niet direct uit te voeren.
+
+Ik heb hierdoor gemerkt dat perfectionisme niet alleen zorgt voor extra werk, maar ook invloed heeft op mijn planning. Een kleine verbetering kan op zichzelf weinig tijd kosten, maar wanneer ik dit meerdere keren doe, kan dit uiteindelijk veel tijd van de geplande werkzaamheden afhalen.
+
+Daarnaast vond ik het importeren van gegevens lastiger dan het toevoegen van normale functionaliteiten. Hierbij moet niet alleen de interface werken, maar moeten gegevens uit een extern formaat ook correct worden geïnterpreteerd en binnen de bestaande database-structuur worden geplaatst.
+
+## Welke inzichten wil ik voor een volgend project behouden?
+
+Er zijn verschillende inzichten en technieken die ik bij een volgend project opnieuw wil gebruiken:
+
+- **Duidelijke scope:** Door vooraf duidelijk te bepalen welke werkzaamheden binnen een sprint vallen, kan ik makkelijker bepalen waar ik wel en niet aan moet werken.
+- **Taken daadwerkelijk afsluiten:** Wanneer een taak aan de eisen voldoet, moet ik deze als afgerond beschouwen. Eventuele verbeteringen kunnen op een later moment worden ingepland.
+- **Git en development branches:** Door branches te gebruiken blijft de geschiedenis van het project overzichtelijk en kan ik wijzigingen beter van elkaar scheiden.
+- **Bestaande structuur hergebruiken:** Niet iedere nieuwe functionaliteit vereist een grote aanpassing aan de bestaande codebase. Wanneer de huidige structuur geschikt is, wil ik hierop blijven voortbouwen.
+- **Planning actief bewaken:** Een planning moet niet alleen aan het begin van een project worden gemaakt, maar gedurende het hele project worden gecontroleerd.
+- **Bestaande kennis toepassen:** Kennis die ik eerder heb opgedaan kan ik opnieuw gebruiken om nieuwe functionaliteiten sneller te ontwikkelen.
+
+## Welke inzichten ga ik bij een volgend project aanpassen?
+
+Hoewel mijn planning tijdens deze sprint beter ging, wil ik mijn manier van plannen bij een volgend project nog verder verbeteren.
+
+Ik wil eerder bepalen welke functionaliteiten absoluut noodzakelijk zijn voor de oplevering en welke verbeteringen pas later mogen worden uitgevoerd. Hierdoor wil ik voorkomen dat extra verbeteringen ongemerkt onderdeel worden van mijn oorspronkelijke planning.
+
+Daarnaast wil ik mijn deadlines nog actiever bewaken met herinneringen en vaste controlemomenten. In de vorige sprint heb ik gemerkt dat een deadline alleen niet genoeg is wanneer ik deze pas vlak voor het oplevermoment serieus ga bewaken.
+
+Ik wil daarom gedurende een project meerdere momenten plannen waarop ik controleer of ik nog op schema lig. Wanneer ik achterloop, moet ik eerder bijsturen in plaats van proberen om alles alsnog aan het einde in te halen.
+
+## Heb ik nog nieuwe inzichten gekregen over de randvoorwaarden van mijn project?
+
+Ja. Tijdens deze sprint heb ik gemerkt dat randvoorwaarden zoals beveiliging en databeheer belangrijker worden wanneer er functionaliteiten worden toegevoegd waarmee gegevens direct kunnen worden aangepast of geïmporteerd.
+
+De Admin-functionaliteit moet bijvoorbeeld niet zomaar voor iedere gebruiker beschikbaar zijn. Beheerdersfunctionaliteiten moeten beschermd worden en gegevens moeten gecontroleerd worden verwerkt.
+
+Ook heb ik bij het importeren van gegevens gemerkt dat het belangrijk is om rekening te houden met de betrouwbaarheid en structuur van externe gegevens. Het is niet voldoende dat een bestand technisch geopend kan worden; de gegevens moeten ook correct binnen de applicatie en database terechtkomen.
+
+Hierdoor ben ik mij meer bewust geworden van het feit dat functionaliteit niet losstaat van de randvoorwaarden van een applicatie.
+
+## Ben ik tevreden over mijn werkwijze en het eindproduct?
+
+Ik ben meer tevreden over mijn werkwijze dan tijdens de vorige sprint.
+
+Tijdens de vorige sprint heb ik het oplevermoment gemist doordat ik bleef werken aan onderdelen die al af waren. Tijdens deze sprint is het beter gelukt om mijn werkzaamheden af te bakenen en mij te richten op de onderdelen die daadwerkelijk gepland waren.
+
+Ik ben daarom tevreden dat ik mijn manier van werken heb kunnen verbeteren.
+
+Over het eindproduct ben ik ook tevreden. De functionaliteiten die aan het begin van deze sprint gepland waren zijn toegevoegd en BarMap is hierdoor verder afgerond.
+
+Ik ben echter niet volledig tevreden over mijn werkwijze, omdat ik nog steeds merk dat ik de neiging heb om te blijven optimaliseren wanneer ik mogelijkheden zie. Dit is iets waar ik ook in toekomstige projecten rekening mee moet blijven houden.
+
+## Conclusie
+
+Mijn belangrijkste leermoment uit deze derde sprint is dat een planning alleen werkt wanneer ik mij er daadwerkelijk aan houd.
+
+Tijdens de vorige sprint bleef ik werken aan functionaliteiten die al klaar waren, waardoor het project niet op tijd werd afgerond. In deze sprint heb ik geprobeerd om dit anders aan te pakken door mijn scope duidelijk af te bakenen en taken daadwerkelijk af te sluiten wanneer ze aan de eisen voldeden.
+
+Dit heeft ervoor gezorgd dat ik de resterende functionaliteiten van BarMap heb kunnen realiseren:
+
+- Het opschonen van de database vanuit de applicatie.
+- Het importeren van Gebruikers, Speltakken en Producten.
+- Het correct sorteren van gebruikers bij het importeren van statistieken uit SQLite.
+
+Daarnaast heb ik geleerd dat ik niet iedere verbetering direct hoef uit te voeren. Een applicatie hoeft niet perfect te zijn voordat deze kan worden opgeleverd. Het belangrijkste is dat de afgesproken functionaliteiten werken en binnen de gestelde tijd worden gerealiseerd.
+
+Het belangrijkste uitgangspunt dat ik uit dit project meeneem is daarom:
+
+> **Eerst afronden wat gepland is, daarna pas verbeteren wat al werkt.**
+
+Dit wil ik bij toekomstige projecten blijven toepassen, zodat mijn perfectionisme minder invloed heeft op mijn planning en oplevermomenten.
