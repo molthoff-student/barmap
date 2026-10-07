@@ -55,8 +55,10 @@ export type Faction = {
     active: boolean;
 };
 
-function sqlToJs(sql: SQLFaction | null): Faction | null {
-    if (!sql) return null;
+export function sqlToFaction(sql: SQLFaction | null): Faction | null {
+    if (sql == null) return null;
+    const invalid = Object.values(sql).some((value) => value == null);
+    if (invalid) return null;
     return {
         id: sql.id,
         name: sql.name,
@@ -103,7 +105,7 @@ export default class FactionRepository {
                 throw new Error(`getAllFactions: ${reason.message}`);
             });
 
-        return factions.map((faction) => sqlToJs(faction)!);
+        return factions.map((faction) => sqlToFaction(faction)!);
     };
     getFactionByName = async (name: string): Promise<Faction | null> => {
         const user = await this.queries.factionByName
@@ -113,7 +115,7 @@ export default class FactionRepository {
                 throw new Error(`getUserByName: ${reason.message}`);
             });
 
-        return sqlToJs(user);
+        return sqlToFaction(user);
     };
     editFaction = async (faction: Faction): Promise<number> => {
         if (__DEV__) console.log(`editFaction: ${JSON.stringify(faction)}`);

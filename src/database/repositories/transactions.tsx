@@ -50,8 +50,8 @@ const GET_MOST_BOUGHT_BY_USERS: string = `
     )
     SELECT user_name, product_name, total_bought, total_spent
     FROM ranked_transactions
-    WHERE purchase_rank = 1;
-    ORDER BY user_name
+    WHERE purchase_rank = 1
+    ORDER BY user_name;
 `;
 
 export type SQLTransaction = {
@@ -87,7 +87,9 @@ export type TransactionStat = {
 };
 
 function sqlToTransaction(sql: SQLTransaction | null): Transaction | null {
-    if (!sql) return null;
+    if (sql == null) return null;
+    const invalid = Object.values(sql).some((value) => value == null);
+    if (invalid) return null;
     return {
         id: sql.id,
         user_id: sql.user_id,
@@ -101,7 +103,9 @@ function sqlToTransaction(sql: SQLTransaction | null): Transaction | null {
 function sqlToTransactionStat(
     sql: SQLTransactionStat | null,
 ): TransactionStat | null {
-    if (!sql) return null;
+    if (sql == null) return null;
+    const invalid = Object.values(sql).some((value) => value == null);
+    if (invalid) return null;
     return {
         user_name: sql.user_name,
         product_name: sql.product_name,

@@ -24,8 +24,10 @@ export type Credit = {
     created_at: Date;
 };
 
-function sqlToCredit(sql: SQLCredit | null): Credit | null {
-    if (!sql) return null;
+export function sqlToCredit(sql: SQLCredit | null): Credit | null {
+    if (sql == null) return null;
+    const invalid = Object.values(sql).some((value) => value == null);
+    if (invalid) return null;
     return {
         id: sql.id,
         user_id: sql.user_id,
