@@ -1,122 +1,117 @@
 import { File, Paths } from "expo-file-system";
-import * as LegacyFileSystem from "expo-file-system/legacy"; // SAF lives only in the legacy module
+import * as LegacyFileSystem from "expo-file-system/legacy"; // StorageAccessFramework lives only in the legacy module
 import * as DocumentPicker from "expo-document-picker";
 import * as Sharing from "expo-sharing";
-import { Platform } from "react-native";
+import { Alert, Platform } from "react-native";
 import * as XLSX from "xlsx";
 import Database from "../database/interface";
-import {
-    FACTIONS,
-    USERS,
-    PRODUCTS,
-    CREDIT,
-    TRANSACTIONS,
-} from "../database/db-init";
-import { SQLUser } from "../database/repositories/users";
-import { SQLFaction } from "../database/repositories/factions";
-import { SQLCredit } from "../database/repositories/credits";
-import { SQLProduct } from "../database/repositories/products";
-import { SQLTransaction } from "../database/repositories/transactions";
+import { serialize, deserialize, Row, DbTable } from "./serde";
+import { FACTIONS, PRODUCTS, USERS } from "../database/db-init";
+import { sqlToUser } from "../database/repositories/users";
+import { sqlToFaction } from "../database/repositories/factions";
+import { sqlToProduct } from "../database/repositories/products";
 
-async function pickJsonFile() {
+const { StorageAccessFramework } = LegacyFileSystem;
+
+const ExcelMimeType =
+    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+
+export async function importDatabaseFromExcel(database: Database) {
+    const dbTable = await serializeExcelDocument();
+    if (dbTable) await writeToDatabase(database, dbTable);
+}
+
+async function insertDbTable<SqlT, RegT>(
+    rows: Row[],
+    sqlToObj: (obj: SqlT) => RegT | null,
+    addObj: (obj: RegT) => Promise<any>,
+) {
+    for (const sql of rows as SqlT[]) {
+        const obj = sqlToObj(sql);
+        if (__DEV__) console.log("inserting DbTable");
+        if (obj) await addObj(obj);
+    }
+}
+
+async function writeToDatabase(db: Database, dbTable: DbTable[]) {
+    try {
+        const tableNames = await db.tableNames();
+
+        await db.inner.withTransactionAsync(async () => {
+            for (const name of tableNames) {
+                await db.wipeTable(name);
+            }
+        });
+
+        for (const { name, rows } of dbTable) {
+            if (__DEV__)
+                console.log(`attempting to import '${name}' from Excel`);
+            switch (name) {
+                case FACTIONS:
+                    await insertDbTable(
+                        rows,
+                        sqlToFaction,
+                        db.factions.addFaction,
+                    );
+                    break;
+                case USERS:
+                    await insertDbTable(rows, sqlToUser, db.users.addUser);
+                    break;
+                case PRODUCTS:
+                    await insertDbTable(
+                        rows,
+                        sqlToProduct,
+                        db.products.addProduct,
+                    );
+                    break;
+            }
+        }
+    } catch (reason: any) {
+        Alert.alert("Kon niet alle data importeren:", reason.message);
+    }
+}
+
+async function serializeExcelDocument() {
     const result = await DocumentPicker.getDocumentAsync({
-        type: "application/json",
-        copyToCacheDirectory: true,
+        type: ExcelMimeType,
+        copyToCacheDirectory: false,
     });
 
     if (result.canceled) {
         return null;
     }
 
-    const file = new File(result.assets[0].uri);
-    const contents = await file.text();
+    const file = result.assets[0];
 
-    return JSON.parse(contents);
-}
+    const base64 = await LegacyFileSystem.readAsStringAsync(file.uri, {
+        encoding: LegacyFileSystem.EncodingType.Base64,
+    });
 
-function convertDbName(dbname: string): string {
-    switch (dbname) {
-        case FACTIONS:
-            return "Speltakken";
-        case USERS:
-            return "Gebruikers";
-        case PRODUCTS:
-            return "Producten";
-        case CREDIT:
-            return "Krediet";
-        case TRANSACTIONS:
-            return "Transacties";
-        default:
-            return dbname;
-    }
-}
+    const workbook = XLSX.read(base64, {
+        type: "base64",
+    });
 
-function convertDbRows(
-    dbname: string,
-    dbrows: Record<string, any>[],
-): Record<string, any>[] {
-    switch (dbname) {
-        case FACTIONS:
-            return (dbrows as SQLFaction[]).map((value) => ({
-                ["ID"]: value.id,
-                ["Naam"]: value.name,
-                ["Actief"]: value.active === 1,
-            }));
-        case USERS:
-            return (dbrows as SQLUser[]).map((value) => ({
-                ["ID"]: value.id,
-                ["Naam"]: value.name,
-                ["Inleg"]: value.given_money * 0.01,
-                ["Uitgave"]: value.spent_money * 0.01,
-                ["Balans"]: (value.given_money - value.spent_money) * 0.01,
-                ["Speltak"]: value.faction,
-                ["Actief"]: value.active === 1,
-            }));
-        case PRODUCTS:
-            return (dbrows as SQLProduct[]).map((value) => ({
-                ["ID"]: value.id,
-                ["Naam"]: value.name,
-                ["Prijs"]: value.price * 0.01,
-                ["Actief"]: value.active === 1,
-            }));
-        case CREDIT:
-            return (dbrows as SQLCredit[]).map((value) => ({
-                ["ID"]: value.id,
-                ["Gebruiker ID"]: value.user_id,
-                ["Inleg"]: value.given_money * 0.01,
-                ["Datum"]: value.created_at,
-            }));
-        case TRANSACTIONS:
-            return (dbrows as SQLTransaction[]).map((value) => ({
-                ["ID"]: value.id,
-                ["Gebruiker ID"]: value.user_id,
-                ["Product ID"]: value.product_id,
-                ["Aantal"]: value.amount_bought,
-                ["Kosten"]: value.amount_spent * 0.01,
-                ["Datum"]: value.created_at,
-            }));
-        default:
-            return dbrows;
-    }
+    const db = workbook.SheetNames.map((sheetName) => {
+        const sheet = workbook.Sheets[sheetName];
+        const rows = XLSX.utils.sheet_to_json<Row>(sheet);
+        return deserialize(sheetName, rows);
+    });
+
+    const rawData = JSON.stringify(db, undefined, 4);
+    console.log(rawData);
+
+    return db;
 }
 
 async function buildWorkbookBase64(db: Database): Promise<string> {
-    const tableNames = await db.inner
-        .getAllAsync<{ name: string }>(
-            `SELECT name FROM sqlite_master WHERE type = "table" AND name NOT LIKE "sqlite_%"`,
-        )
-        .then((tables) => tables.map((row) => row.name))
-        .catch((reason) => {
-            throw new Error(`buildWorkbookBase64: ${reason.message}`);
-        });
+    const tableNames = await db.tableNames();
 
     const tables: Record<string, Record<string, any>[]> = {};
     for (const dbname of tableNames) {
-        const name = convertDbName(dbname);
         const dbRows = await db.inner.getAllAsync<Record<string, any>>(
             `SELECT * FROM "${dbname}"`,
         );
-        const rows = convertDbRows(dbname, dbRows);
+        const { name, rows } = serialize(dbname, dbRows);
         tables[name] = rows;
     }
 
@@ -143,20 +138,6 @@ async function buildWorkbookBase64(db: Database): Promise<string> {
     }
 
     return XLSX.write(workbook, { type: "base64", bookType: "xlsx" }) as string;
-}
-
-const { StorageAccessFramework } = LegacyFileSystem;
-const androidOsMimeType =
-    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
-export async function exportDatabaseToExcel(db: Database): Promise<void> {
-    const base64 = await buildWorkbookBase64(db);
-    const fileName = `export_${Date.now()}.xlsx`;
-
-    if (Platform.OS === "android") {
-        await saveViaFolderPicker(base64, fileName, androidOsMimeType);
-    } else {
-        await saveViaShareSheet(base64, fileName);
-    }
 }
 
 async function saveViaFolderPicker(
@@ -201,4 +182,15 @@ async function saveViaShareSheet(
         UTI: "public.item",
         dialogTitle: "Save database export",
     });
+}
+
+export async function exportDatabaseToExcel(db: Database): Promise<void> {
+    const base64 = await buildWorkbookBase64(db);
+    const fileName = `export_${Date.now()}.xlsx`;
+
+    if (Platform.OS === "android") {
+        await saveViaFolderPicker(base64, fileName, ExcelMimeType);
+    } else {
+        await saveViaShareSheet(base64, fileName);
+    }
 }
