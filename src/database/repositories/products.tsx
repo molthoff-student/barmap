@@ -64,7 +64,9 @@ export type Product = {
 };
 
 export function sqlToProduct(sql: SQLProduct | null): Product | null {
-    if (!sql) return null;
+    if (sql == null) return null;
+    const invalid = Object.values(sql).some((value) => value == null);
+    if (invalid) return null;
     return {
         id: sql.id,
         name: sql.name,
@@ -181,8 +183,8 @@ export default class ProductRepository {
     };
 
     addProduct = async (product: Product): Promise<number> => {
+        if (__DEV__) console.log(`addProduct: ${JSON.stringify(product)}`);
         const isExist = await this.getProductByName(product.name);
-
         if (isExist)
             throw new Error(`Product met de naam "${product.name}" bestaat al`);
 

@@ -77,16 +77,18 @@ export type User = {
     active: boolean;
 };
 
-export const sqlToUser = (user: SQLUser | null): User | null => {
-    if (!user) return null;
+export const sqlToUser = (sql: SQLUser | null): User | null => {
+    if (sql == null) return null;
+    const invalid = Object.values(sql).some((value) => value == null);
+    if (invalid) return null;
     return {
-        id: user.id,
-        name: user.name,
-        given_money: new Currency(user.given_money),
-        spent_money: new Currency(user.spent_money),
-        balance: new Currency(user.given_money - user.spent_money),
-        faction: user.faction,
-        active: user.active === 1,
+        id: sql.id,
+        name: sql.name,
+        given_money: new Currency(sql.given_money),
+        spent_money: new Currency(sql.spent_money),
+        balance: new Currency(sql.given_money - sql.spent_money),
+        faction: sql.faction,
+        active: sql.active === 1,
     };
 };
 

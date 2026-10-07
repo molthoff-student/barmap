@@ -18,6 +18,12 @@ async function openDatabase(): Promise<SQLite.SQLiteDatabase> {
     return await SQLite.openDatabaseAsync(databaseName);
 }
 
+const GET_TABLE_NAMES = `
+    SELECT name FROM sqlite_master 
+    WHERE type = "table" 
+        AND name NOT LIKE "sqlite_%"
+`;
+
 export default class Database {
     readonly inner: SQLite.SQLiteDatabase;
     readonly users: UserRepository;
@@ -79,5 +85,19 @@ export default class Database {
             transactions,
             credits,
         );
+    }
+    async tableNames(): Promise<string[]> {
+        return await this.inner
+            .getAllAsync<{ name: string }>(GET_TABLE_NAMES)
+            .then((tables) => tables.map((row) => row.name))
+            .catch((reason) => {
+                throw new Error(`tableNames: ${reason.message}`);
+            });
+    }
+    async wipeTable(name: string): Promise<void> {
+        if (__DEV__) console.log(`wiping '${name}'`);
+        await this.inner.runAsync(`DELETE FROM ${name}`).catch((reason) => {
+            throw new Error(`wipeTable: ${reason.message}`);
+        });
     }
 }
